@@ -58,9 +58,8 @@ Create a `.env` in `apps/server/` then copy and paste:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
-SUPABASE_URL=http://localhost:54321
-PUBLIC_SUPABASE_URL='http://localhost:54321'
-PUBLIC_SUPABASE_ANON_KEY='your-local-anon-key'
+NEXT_PUBLIC_SUPABASE_URL='http://localhost:54321'
+NEXT_PUBLIC_SUPABASE_ANON_KEY='your-local-anon-key'
 ```
 
 > - Anon keys are printed in the terminal when you run `npx supabase start`.
@@ -79,7 +78,6 @@ This project uses Supabase PostgreSQL database for data storage. Follow these st
 
 1. Make sure you have a PostgreSQL database set up.
 2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
 3. Apply the schema to your database:
 
 ```bash
