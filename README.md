@@ -112,3 +112,11 @@ click-kos/
 - `npm run db:push`: Push schema changes to database
 - `npm run db:studio`: Open database studio UI
 - `cd apps/web && npm run generate-pwa-assets`: Generate PWA assets
+
+# frontend
+Color Scheme
+
+Primary Navy: #0E2148
+Primary Purple: #483AA0
+Primary Light Purple: #7965C1
+Black and White for contrast
