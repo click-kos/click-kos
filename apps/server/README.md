@@ -54,7 +54,7 @@ Default ports:
 
 ### 3. Setup `.env.local`
 
-Create a `.env` in `apps/server/` then copy and paste:
+Create a `.env.local` in `apps/server/` then copy and paste:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
