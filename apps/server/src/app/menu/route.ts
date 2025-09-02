@@ -6,8 +6,19 @@ import { NextResponse,NextRequest } from "next/server";
 // GET /api/menu?available=true&category=drinks
 export async function GET(request: Request) {
   const supabase = await createClient();
+  const { searchParams}= new URL(request.url);
+  let query=supabase.from("menu_item").select("*");
 
-  const { data, error } = await supabase.from("menu_item").select("*");
+  // Optional filters
+  if (searchParams.get("available")){
+    query=query.eq("available",searchParams.get("available")=="true");
+
+  }
+  if (searchParams.get("category")){
+    query=query.eq("category",searchParams.get("category"));
+  }
+
+  const { data, error } = await query;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
