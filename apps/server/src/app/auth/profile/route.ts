@@ -12,8 +12,9 @@ export async function GET(req: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Missing access token"}, { status: 401});
     }
-
+    
     // Create a Supabase client instance (server-side)
+
     const supabase = await createClient();
 
     // Verify the token and get the user
