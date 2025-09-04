@@ -402,7 +402,7 @@ const StaffDashboard: React.FC = () => {
   );
 };
 
-// The StudentDashboard component
+// The Student Dashboard component
 
 const StudentDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([
