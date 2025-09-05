@@ -19,38 +19,30 @@ import {
 
 // mock data – replace later with real API data
 const salesData = [
-  { name: "Mon", revenue: 400 },
-  { name: "Tue", revenue: 300 },
-  { name: "Wed", revenue: 500 },
-  { name: "Thu", revenue: 200 },
-  { name: "Fri", revenue: 600 },
-  { name: "Sat", revenue: 800 },
-  { name: "Sun", revenue: 700 },
+  { name: "Mon", revenue: 6000 },
+  { name: "Tue", revenue: 7500 },
+  { name: "Wed", revenue: 5000 },
+  { name: "Thu", revenue: 10000 },
+  { name: "Fri", revenue: 15500 },
+  { name: "Sat", revenue: 4000 },
 ];
 
 const popularItems = [
-  { name: "Burger", value: 40 },
-  { name: "Pizza", value: 30 },
-  { name: "Drinks", value: 20 },
-  { name: "Desserts", value: 10 },
+  { name: "Burger and chips", value: 60 },
+  { name: "Pie", value: 35},
+  { name: "Enery drink", value: 20 },
+  { name: "Chocalate muffin", value: 30 },
 ];
 
 const peakHours = [
   { hour: "9AM", orders: 20 },
-  { hour: "12PM", orders: 45 },
-  { hour: "3PM", orders: 30 },
-  { hour: "6PM", orders: 70 },
+  { hour: "12PM", orders: 200 },
+  { hour: "3PM", orders: 80 },
+  { hour: "6PM", orders: 150 },
   { hour: "9PM", orders: 40 },
-];
-const staffPerformance = [
-  { name: "Alice", efficiency: 85, orders: 120 },
-  { name: "Bob", efficiency: 72, orders: 95 },
-  { name: "Carla", efficiency: 90, orders: 140 },
-  { name: "David", efficiency: 60, orders: 80 },
 ];
 
 const COLORS = ["#483AA0", "#7965C1", "#A499D9", "#C1BAF5"];
-
 
 export default function AnalyticsPage() {
   return (
@@ -142,7 +134,7 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 lg:col-start-1">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Peak Hours Analysis</h2>
           <ResponsiveContainer width="100%" height={250}>
             <ReBarChart data={peakHours}>
@@ -153,21 +145,6 @@ export default function AnalyticsPage() {
               <Bar dataKey="orders" fill="#7965C1" />
             </ReBarChart>
           </ResponsiveContainer>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Staff Performance</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <ReBarChart data={staffPerformance}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="orders" fill="#483AA0" name="Orders Completed" />
-              <Bar dataKey="efficiency" fill="#7965C1" name="Efficiency (%)" />
-            </ReBarChart>
-          </ResponsiveContainer>
-
         </div>
       </div>
     </div>
