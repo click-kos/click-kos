@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 
 // Define interfaces for types
-
 interface ModalProps {
   title: string;
   onClose: () => void;
@@ -46,44 +45,10 @@ interface Order {
   feedback?: boolean;
 }
 
-// The main component that switches between dashboards.
-export default function DashboardSwitcher() {
-  const [activeDashboard, setActiveDashboard] = useState<"staff" | "student">("staff");
-
-  return (
-    <div className="container mx-auto max-w-6xl px-4 py-6">
-      {activeDashboard === "staff" ? <StaffDashboard /> : <StudentDashboard />}
-
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 rounded-full bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 z-50">
-        <button
-          onClick={() => setActiveDashboard("staff")}
-          className={`px-4 py-1 text-sm rounded-full font-semibold transition-colors ${
-            activeDashboard === "staff"
-              ? "bg-[#483AA0] text-white shadow"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
-        >
-          Staff
-        </button>
-        <button
-          onClick={() => setActiveDashboard("student")}
-          className={`px-4 py-1 text-sm rounded-full font-semibold transition-colors ${
-            activeDashboard === "student"
-              ? "bg-[#483AA0] text-white shadow"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
-        >
-          Student
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Reusable Modal Component
+// Reusable Modal Component with fixed backdrop styling
 const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => {
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 relative">
         <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-xl font-semibold text-[#0E2148] dark:text-white">{title}</h3>
@@ -336,12 +301,10 @@ const StaffDashboard: React.FC = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Staff Dashboard</h1>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <OrderQueue />
         </div>
-
         <div className="space-y-4">
           <div className="bg-gradient-to-r from-[#0E2148] to-[#483AA0] text-white rounded-lg p-4">
             <div className="flex items-center justify-between">
@@ -352,7 +315,6 @@ const StaffDashboard: React.FC = () => {
               <Clock className="w-8 h-8 opacity-75" />
             </div>
           </div>
-
           <div className="bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -362,7 +324,6 @@ const StaffDashboard: React.FC = () => {
               <Users className="w-8 h-8 opacity-75" />
             </div>
           </div>
-
           <div className="bg-gradient-to-r from-[#7965C1] to-[#483AA0] text-white rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -374,7 +335,6 @@ const StaffDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -402,8 +362,84 @@ const StaffDashboard: React.FC = () => {
   );
 };
 
-// The Student Dashboard component
+// FeedbackModal component for students to leave feedback
+interface FeedbackModalProps {
+  order: Order;
+  onClose: () => void;
+  onSubmit: (rating: number, comment: string) => void;
+}
 
+const FeedbackModal: React.FC<FeedbackModalProps> = ({ order, onClose, onSubmit }) => {
+  const [rating, setRating] = useState<number>(0);
+  const [comment, setComment] = useState<string>("");
+
+  const handleRatingChange = (newRating: number) => {
+    setRating(newRating);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(rating, comment);
+  };
+
+  return (
+    <Modal title={`Leave Feedback for Order ${order.id}`} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <h4 className="font-semibold mb-2 text-gray-700 dark:text-gray-300">
+            Rate your experience:
+          </h4>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                size={24}
+                className={`cursor-pointer transition-colors ${
+                  rating >= star
+                    ? "text-yellow-400 fill-current"
+                    : "text-gray-300 dark:text-gray-600"
+                }`}
+                onClick={() => handleRatingChange(star)}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <label
+            htmlFor="comment"
+            className="block font-semibold mb-2 text-gray-700 dark:text-gray-300"
+          >
+            Comments:
+          </label>
+          <textarea
+            id="comment"
+            rows={4}
+            className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#483AA0]"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          ></textarea>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-full bg-[#483AA0] text-white hover:bg-[#3d3184] transition-colors"
+          >
+            Submit Feedback
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+// The Student Dashboard component
 const StudentDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([
     {
@@ -497,7 +533,6 @@ const StudentDashboard: React.FC = () => {
       <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">
         Student Dashboard
       </h1>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -506,14 +541,13 @@ const StudentDashboard: React.FC = () => {
               Start New Order
             </h2>
             <button
-              onClick={() => window.location.href = "/menu"}
+              onClick={() => (window.location.href = "/menu")}
               className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#483AA0] transition-colors text-center"
             >
               <span className="text-lg text-gray-600 dark:text-gray-400">Go to Menu</span>
             </button>
           </div>
         </div>
-
         <div className="space-y-4">
           <div className="bg-gradient-to-r from-[#0E2148] to-[#483AA0] text-white rounded-lg p-4">
             <div className="flex items-center justify-between">
@@ -526,7 +560,6 @@ const StudentDashboard: React.FC = () => {
               <Clock className="w-8 h-8 opacity-75" />
             </div>
           </div>
-
           <div className="bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -538,7 +571,6 @@ const StudentDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
           <Receipt className="w-5 h-5 text-[#483AA0]" />
@@ -577,7 +609,6 @@ const StudentDashboard: React.FC = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
                     {order.items.map((item) => item.name).join(", ")}
                   </p>
-
                   <div className="mt-4 flex justify-between items-center">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -620,7 +651,6 @@ const StudentDashboard: React.FC = () => {
           )}
         </div>
       </div>
-
       {selectedOrder && (
         <Modal title={`Order Details: ${selectedOrder.id}`} onClose={closeModal}>
           <div className="space-y-4 text-gray-700 dark:text-gray-300">
@@ -659,7 +689,6 @@ const StudentDashboard: React.FC = () => {
           </div>
         </Modal>
       )}
-
       {feedbackModalOpen && orderToFeedback && (
         <FeedbackModal
           order={orderToFeedback}
@@ -671,79 +700,35 @@ const StudentDashboard: React.FC = () => {
   );
 };
 
-// FeedbackModal component for students to leave feedback
-interface FeedbackModalProps {
-  order: Order;
-  onClose: () => void;
-  onSubmit: (rating: number, comment: string) => void;
-}
-
-const FeedbackModal: React.FC<FeedbackModalProps> = ({ order, onClose, onSubmit }) => {
-  const [rating, setRating] = useState<number>(0);
-  const [comment, setComment] = useState<string>("");
-
-  const handleRatingChange = (newRating: number) => {
-    setRating(newRating);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(rating, comment);
-  };
+// The main component that switches between dashboards.
+export default function DashboardSwitcher() {
+  const [activeDashboard, setActiveDashboard] = useState<"staff" | "student">("staff");
 
   return (
-    <Modal title={`Leave Feedback for Order ${order.id}`} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <h4 className="font-semibold mb-2 text-gray-700 dark:text-gray-300">
-            Rate your experience:
-          </h4>
-          <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                size={24}
-                className={`cursor-pointer transition-colors ${
-                  rating >= star
-                    ? "text-yellow-400 fill-current"
-                    : "text-gray-300 dark:text-gray-600"
-                }`}
-                onClick={() => handleRatingChange(star)}
-              />
-            ))}
-          </div>
-        </div>
-        <div>
-          <label
-            htmlFor="comment"
-            className="block font-semibold mb-2 text-gray-700 dark:text-gray-300"
-          >
-            Comments:
-          </label>
-          <textarea
-            id="comment"
-            rows={4}
-            className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#483AA0]"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          ></textarea>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-full bg-[#483AA0] text-white hover:bg-[#3d3184] transition-colors"
-          >
-            Submit Feedback
-          </button>
-        </div>
-      </form>
-    </Modal>
+    <div className="container mx-auto max-w-6xl px-4 py-6">
+      {activeDashboard === "staff" ? <StaffDashboard /> : <StudentDashboard />}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 rounded-full bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+        <button
+          onClick={() => setActiveDashboard("staff")}
+          className={`px-4 py-1 text-sm rounded-full font-semibold transition-colors ${
+            activeDashboard === "staff"
+              ? "bg-[#483AA0] text-white shadow"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+          }`}
+        >
+          Staff
+        </button>
+        <button
+          onClick={() => setActiveDashboard("student")}
+          className={`px-4 py-1 text-sm rounded-full font-semibold transition-colors ${
+            activeDashboard === "student"
+              ? "bg-[#483AA0] text-white shadow"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+          }`}
+        >
+          Student
+        </button>
+      </div>
+    </div>
   );
-};
+}
