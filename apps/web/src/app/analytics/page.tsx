@@ -17,7 +17,7 @@ import {
   Legend
 } from "recharts";
 
-// Example mock data – replace later with real API data
+// mock data – replace later with real API data
 const salesData = [
   { name: "Mon", revenue: 400 },
   { name: "Tue", revenue: 300 },
