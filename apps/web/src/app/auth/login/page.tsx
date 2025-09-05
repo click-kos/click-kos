@@ -3,15 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from "lucide-react";
 import { setAuthStatus, type UserData } from "../../../lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,235 +23,136 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all fields");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!formData.email.includes("@")) {
-      setError("Please enter a valid email address");
-      setIsLoading(false);
-      return;
-    }
+    if (!formData.email || !formData.password) return setError("Please fill in all fields"), setIsLoading(false);
+    if (!formData.email.includes("@")) return setError("Please enter a valid email"), setIsLoading(false);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Implementation for actual authentication
-      console.log("Login attempt:", formData);
-      
-      // For demo purposes, check for a specific email/password
+      await new Promise(r => setTimeout(r, 1000)); // simulate API
       if (formData.email === "test@mynwu.ac.za" && formData.password === "demo123") {
-        const userData: UserData = {
-          name: "Thuso Ndou",
-          email: "test@mynwu.ac.za",
-          role: "Student"
-        };
-        
-        // Set authentication status using the utility function
+        const userData: UserData = { name: "Thuso Ndou", email: formData.email, role: "Student" };
         setAuthStatus(true, userData);
-        
-        // Navigate back to home page
-        router.push('/');
-      } else {
-        setError("Invalid email or password");
-      }
-    } catch (err) {
-      setError("An error occurred. Please try again.");
+        router.push("/");
+      } else setError("Invalid email or password");
+    } catch {
+      setError("An error occurred. Try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    // Simulate Google login
+    setIsLoading(true);
+    setError("");
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      const userData: UserData = { name: "Google User", email: "googleuser@gmail.com", role: "Student" };
+      setAuthStatus(true, userData);
+      router.push("/");
+    } catch {
+      setError("Google login failed. Try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          {/* Header Section */}
-          <div className="text-center">
-            
-            {/* Title and Description */}
-            <div className="mt-6">
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                Welcome back
-              </h1>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Sign in to your Click & Kos account
-              </p>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <div className="w-full max-w-md space-y-6 bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white text-center">Welcome back</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Sign in to your Click & Kos account</p>
+
+        {error && (
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
+            <AlertCircle className="h-5 w-5" /> {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
+          <div className="relative">
+            <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              placeholder="University email"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-[#483AA0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              required
+            />
           </div>
 
-          {/* Main Form Card */}
-          <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl border border-gray-200 dark:border-gray-700">
-            <div className="px-8 py-8">
-              {/* Error Message */}
-              {error && (
-                <div className="mb-6 flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                  <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                    {error}
-                  </span>
-                </div>
-              )}
-
-              {/* Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Field */}
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
-                      placeholder="Enter your university email"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => handleInputChange("password", e.target.value)}
-                      className="w-full pl-12 pr-12 py-3.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
-                      placeholder="Enter your password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      type="checkbox"
-                      className="h-4 w-4 text-[#483AA0] focus:ring-[#483AA0] border-gray-300 rounded focus:ring-2 focus:ring-offset-2"
-                    />
-                    <label htmlFor="remember-me" className="ml-3 block text-sm text-gray-700 dark:text-gray-300">
-                      Remember me
-                    </label>
-                  </div>
-                  <Link 
-                    href="/auth/forgot-password" 
-                    className="text-sm font-medium text-[#483AA0] dark:text-[#7965C1] hover:text-[#0E2148] dark:hover:text-[#483AA0] transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex justify-center items-center gap-3 py-3.5 px-4 border border-transparent rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#0E2148] to-[#483AA0] hover:from-[#483AA0] hover:to-[#7965C1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#483AA0] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      <LogIn className="h-5 w-5" />
-                      Sign In
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Demo Credentials */}
-              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                <p className="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">Demo Credentials:</p>
-                <div className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
-                  <p>Email: <span className="font-mono">test@mynwu.ac.za</span></p>
-                  <p>Password: <span className="font-mono">demo123</span></p>
-                </div>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="px-8 py-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-3 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    Don't have an account?
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 text-center">
-                <Link
-                  href="/auth/register"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#483AA0] dark:text-[#7965C1] hover:text-[#0E2148] dark:hover:text-[#483AA0] transition-colors group"
-                >
-                  Create a new account
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </div>
-
-            {/* SSO Section */}
-            <div className="px-8 py-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-3 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center items-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <div className="h-5 w-5 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-                    <span className="text-xs text-white font-bold">U</span>
-                  </div>
-                  University SSO
-                </button>
-              </div>
-            </div>
+          {/* Password */}
+          <div className="relative">
+            <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+            <input
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              placeholder="Password"
+              className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-[#483AA0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              required
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-gray-400">
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
+
+          <div className="flex justify-between text-sm">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="h-4 w-4 text-[#483AA0] rounded border-gray-300" /> Remember me
+            </label>
+            <Link href="/auth/forgot-password" className="text-[#483AA0] dark:text-[#7965C1]">Forgot password?</Link>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-[#0E2148] to-[#483AA0] text-white font-semibold disabled:opacity-50"
+          >
+            {isLoading ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <LogIn className="h-5 w-5" />}
+            {isLoading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+
+        {/* Or separator */}
+        <div className="flex items-center justify-center gap-2 mt-3 mb-3 text-gray-400 dark:text-gray-500">
+          <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></span>
+          <span className="px-2 text-sm">or</span>
+          <span className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></span>
+        </div>
+
+        {/* Google Login with inline SVG */}
+        <button
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold hover:bg-gray-100 dark:hover:bg-gray-600 transition disabled:opacity-50"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 533.5 544.3">
+            <path fill="#4285F4" d="M533.5 278.4c0-17.4-1.6-34-4.6-50.2H272v95.1h146.9c-6.4 34.7-25.7 64.1-54.6 83.7v69.4h88.2c51.7-47.7 81-117.9 81-198z"/>
+            <path fill="#34A853" d="M272 544.3c73.8 0 135.8-24.4 181-66.4l-88.2-69.4c-24.5 16.4-55.9 26-92.8 26-71.4 0-132-48.1-153.7-112.8H29.8v70.6C75 494.7 167.7 544.3 272 544.3z"/>
+            <path fill="#FBBC05" d="M118.3 318.7c-4.7-14-7.3-28.9-7.3-44 0-15.1 2.6-30 7.3-44v-70.6H29.8c-15 30.1-23.6 63.9-23.6 99s8.6 68.9 23.6 99l88.5-70.6z"/>
+            <path fill="#EA4335" d="M272 107.9c39.7 0 75.4 13.6 103.6 40.2l77.7-77.7C406.7 24.3 344.7 0 272 0 167.7 0 75 49.6 29.8 135.5l88.5 70.6C140 156 200.6 107.9 272 107.9z"/>
+          </svg>
+          {isLoading ? "Signing in..." : "Sign in with Google"}
+        </button>
+
+        {/* Demo credentials */}
+        <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-3">
+          <p className="font-semibold">Demo Credentials:</p>
+          <p>Email: <span className="font-mono">test@mynwu.ac.za</span></p>
+          <p>Password: <span className="font-mono">demo123</span></p>
+        </div>
+
+        {/* Register link */}
+        <div className="text-sm mt-2 flex justify-center items-center gap-1">
+          <span>Don't have an account?</span>
+          <Link
+            href="/auth/register"
+            className="text-[#483AA0] dark:text-[#7965C1] hover:underline"
+          >
+            Create account
+          </Link>
         </div>
       </div>
     </div>
