@@ -115,7 +115,7 @@ export default function AnalyticsPage() {
             <PieChart className="w-5 h-5 text-[#7965C1]" />
             Popular Items
           </h2>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={350}>
             <RePieChart>
               <Pie
                 data={popularItems}
@@ -130,10 +130,10 @@ export default function AnalyticsPage() {
                 ))}
               </Pie>
               <Tooltip />
+              <Legend />
             </RePieChart>
           </ResponsiveContainer>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 lg:col-start-1">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Peak Hours Analysis</h2>
           <ResponsiveContainer width="100%" height={250}>
