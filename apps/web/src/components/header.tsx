@@ -163,7 +163,7 @@ export default function Header() {
             <div
               id="overlay"
               onClick={toggleMobileNav}
-              className="fixed top-0 left-0 w-full h-full bg-black/50 z-10"
+              className="fixed lg:hidden top-0 left-0 w-full h-full bg-black/50 z-10"
             ></div>
           )}
 
