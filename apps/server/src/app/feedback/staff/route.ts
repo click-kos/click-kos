@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Manual avg calculation
+  // Manual avg calculation//
   let avg_rating = 0;
   if (feedback && feedback.length > 0) {
     const sum = feedback.reduce((acc, row) => acc + row.rating, 0);

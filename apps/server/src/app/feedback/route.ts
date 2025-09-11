@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  // Ensure order belongs to user and is completed
+  // Ensure order belongs to user and is completed 
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select("id, status, user_id")
