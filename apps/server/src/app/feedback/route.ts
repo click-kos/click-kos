@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 }
 
 
-//GET /feedback (user's)
+//GET /feedback (users)
 export async function GET(req: Request) {
   const supabase = await createClient();
 
