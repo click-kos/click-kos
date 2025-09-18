@@ -158,6 +158,7 @@ export default function Header() {
         {/* Right Side - Navigation Tabs, Auth, and Mode Toggle */}
         <div className="flex items-center gap-4">
           {/* Navigation Tabs */}
+
           {/* Overlay For Mobile Nav*/}
           {mobileNavOpen && (
             <div
