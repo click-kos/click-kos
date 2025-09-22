@@ -14,7 +14,7 @@ function validateMenuItem(data:any){
   if (!data.description || typeof data.description !== "string"){
     errors.description="Description is required and must be a string.";
   }
-  if (data.available !=="boolean"){
+  if (data.available !== undefined && typeof data.available !=="boolean"){
     errors.available="Available is required and must be a boolean.";
   }
   if (!data.category || typeof data.category !== "string"){
