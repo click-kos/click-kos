@@ -1,0 +1,37 @@
+{
+	"info": {
+		"_postman_id": "f5d6dfc9-1ec9-401b-ac4e-3e19c283932b",
+		"name": "Api documentation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_uid": "47547761-f5d6dfc9-1ec9-401b-ac4e-3e19c283932b"
+	},
+	"item": [
+		{
+			"name": "https://api-click-kos.netlify.app/notifications",
+			"id": "5f9613b6-b6e5-4300-a9e1-c09ccbe0395e",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "inherit"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api-click-kos.netlify.app/notifications",
+					"protocol": "https",
+					"host": [
+						"api-click-kos",
+						"netlify",
+						"app"
+					],
+					"path": [
+						"notifications"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
