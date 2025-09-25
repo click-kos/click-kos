@@ -41,25 +41,87 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 }
 
 // PUT /api/menu/:id
-export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
-    const { id } = await context.params;
-    const supabase = await createClient();
-    const body = await req.json();
+// PUT /api/menu/:id
+export async function PUT(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  const supabase = await createClient();
+  const body = await req.json();
 
-    const validationErrors = validateMenuItem(body);
-    if (validationErrors)
-        return NextResponse.json({ error: validationErrors }, { status: 400 });
+  // Pull imageUrl out separately; rest goes to menu_item
+  const { imageUrl, ...updateFields } = body;
 
-    const { data, error } = await supabase
-        .from("menu_item")
-        .update(body)
-        .eq("item_id", id)
-        .select();
+  // Validate the item fields (not imageUrl)
+  const validationErrors = validateMenuItem(updateFields);
+  if (validationErrors) {
+    return NextResponse.json({ error: validationErrors }, { status: 400 });
+  }
 
-    if (error)
-        return NextResponse.json({ error: error.message }, { status: 500 });
+  // Update the menu_item record
+  const { data: itemData, error: itemError } = await supabase
+    .from("menu_item")
+    .update(updateFields)
+    .eq("item_id", id)
+    .select()
+    .single();
 
-    return NextResponse.json({ message: "Menu item updated successfully", data }, { status: 200 });
+  if (itemError) {
+    return NextResponse.json({ error: itemError.message }, { status: 500 });
+  }
+
+  //  If imageUrl is provided, insert or update the related item_image record
+ // 2Handle image update if provided
+let imageRecord = null;
+if (imageUrl) {
+  // Check if an image already exists for this menu item
+  const { data: existing, error: fetchError } = await supabase
+    .from("item_image")
+    .select("img_id")       // use your actual primary key
+    .eq("item_id", id)
+    .maybeSingle();
+
+  if (fetchError) {
+    return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  }
+
+  if (existing) {
+    // Update the existing image URL
+    const { data: updatedImage, error: updateError } = await supabase
+      .from("item_image")
+      .update({ url: imageUrl })
+      .eq("item_id", id)
+      .select()
+      .single();
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+    imageRecord = updatedImage;
+  } else {
+    // Insert a new record if none exists
+    const { data: newImage, error: insertError } = await supabase
+      .from("item_image")
+      .insert([{ item_id: id, url: imageUrl }])
+      .select()
+      .single();
+
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+    imageRecord = newImage;
+  }
+}
+
+
+  return NextResponse.json(
+    {
+      message: "Menu item updated successfully",
+      data: { ...itemData, image: imageRecord },
+    },
+    { status: 200 }
+  );
 }
 
 // DELETE /api/menu/:id
