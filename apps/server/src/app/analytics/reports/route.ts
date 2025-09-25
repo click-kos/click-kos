@@ -31,7 +31,7 @@ export async function GET(req: Request) {
     doc.text("This is a sample analytics report generated as PDF.");
     doc.end();
 
-    const buffer = await getStream.buffer(doc);
+    const buffer = doc.read();
     const base64 = buffer.toString("base64");
 
     return NextResponse.json({
