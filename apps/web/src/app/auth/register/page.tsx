@@ -86,7 +86,7 @@ export default function RegisterPage() {
         year_of_study: formData.year, // API expects year_of_study
       };
 
-      const response = await fetch('https://api-click-kos.netlify.app/signup', {
+      const response = await fetch('https://api-click-kos.netlify.app/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
