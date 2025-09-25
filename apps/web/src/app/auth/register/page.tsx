@@ -74,11 +74,36 @@ export default function RegisterPage() {
     }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Registration attempt:", formData);
-      alert("Registration successful! Please check your email to verify your account.");
-      window.location.href = "/auth/login";
-    } catch {
+      // Map form data to API expected format
+      const apiData = {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: formData.role,
+        student_number: formData.studentId, // API expects student_number
+        faculty: formData.department, // API expects faculty
+        year_of_study: formData.year, // API expects year_of_study
+      };
+
+      const response = await fetch('https://api-click-kos.netlify.app/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Registration successful! Please check your email to verify your account.");
+        window.location.href = "/auth/login";
+      } else {
+        setError(data.error || "An error occurred during registration. Please try again.");
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
       setError("An error occurred during registration. Please try again.");
     } finally {
       setIsLoading(false);
