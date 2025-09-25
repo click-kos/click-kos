@@ -23,17 +23,45 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    if (!formData.email || !formData.password) return setError("Please fill in all fields"), setIsLoading(false);
-    if (!formData.email.includes("@")) return setError("Please enter a valid email"), setIsLoading(false);
+    if (!formData.email || !formData.password) {
+      setError("Please fill in all fields");
+      setIsLoading(false);
+      return;
+    }
+    if (!formData.email.includes("@")) {
+      setError("Please enter a valid email");
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      await new Promise(r => setTimeout(r, 1000)); // simulate API
-      if (formData.email === "test@mynwu.ac.za" && formData.password === "demo123") {
-        const userData: UserData = { name: "Thuso Ndou", email: formData.email, role: "Student" };
+      const response = await fetch('https://api-click-kos.netlify.app/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Assuming the response has user data
+        const userData: UserData = {
+          name: data.user?.email || formData.email, // Use email as fallback for name
+          email: formData.email,
+          role: "Student" // Default role, could be extracted from response if available
+        };
         setAuthStatus(true, userData);
         router.push("/");
-      } else setError("Invalid email or password");
-    } catch {
+      } else {
+        setError(data.error || "Invalid email or password");
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       setError("An error occurred. Try again.");
     } finally {
       setIsLoading(false);
