@@ -35,7 +35,7 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await fetch('https://api-click-kos.netlify.app/signup', {
+      const response = await fetch('https://api-click-kos.netlify.app/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,13 +164,6 @@ export default function LoginPage() {
           </svg>
           {isLoading ? "Signing in..." : "Sign in with Google"}
         </button>
-
-        {/* Demo credentials */}
-        <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-3">
-          <p className="font-semibold">Demo Credentials:</p>
-          <p>Email: <span className="font-mono">test@mynwu.ac.za</span></p>
-          <p>Password: <span className="font-mono">demo123</span></p>
-        </div>
 
         {/* Register link */}
         <div className="text-sm mt-2 flex justify-center items-center gap-1">
