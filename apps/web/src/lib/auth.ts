@@ -8,6 +8,7 @@ export interface UserData {
 
 export const AUTH_STORAGE_KEY = 'isAuthenticated';
 export const USER_STORAGE_KEY = 'user';
+export const TOKEN_STORAGE_KEY = 'access_token';
 
 export const getAuthStatus = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -26,6 +27,11 @@ export const getUserData = (): UserData | null => {
   }
 };
 
+export const getAccessToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_STORAGE_KEY);
+};
+
 export const setAuthStatus = (isAuthenticated: boolean, userData?: UserData): void => {
   if (typeof window === 'undefined') return;
   
@@ -35,6 +41,7 @@ export const setAuthStatus = (isAuthenticated: boolean, userData?: UserData): vo
   } else {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
   }
   
   // Dispatch custom event to notify other components
@@ -46,11 +53,12 @@ export const clearAuth = (): void => {
   
   localStorage.removeItem(AUTH_STORAGE_KEY);
   localStorage.removeItem(USER_STORAGE_KEY);
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
   
   // Dispatch custom event to notify other components
   window.dispatchEvent(new CustomEvent('authStateChanged'));
 };
 
 export const isAuthenticated = (): boolean => {
-  return getAuthStatus() && getUserData() !== null;
-}; 
+  return getAuthStatus() && getUserData() !== null && getAccessToken() !== null;
+};

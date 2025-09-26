@@ -35,7 +35,7 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await fetch('https://api-click-kos.netlify.app/auth/login', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,13 +49,51 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Assuming the response has user data
-        const userData: UserData = {
-          name: data.user?.email || formData.email, // Use email as fallback for name
-          email: formData.email,
-          role: "Student" // Default role, could be extracted from response if available
-        };
-        setAuthStatus(true, userData);
+        // Store the access token from the session
+        if (data.session?.access_token) {
+          localStorage.setItem('access_token', data.session.access_token);
+        }
+
+        // Fetch complete user profile data from backend
+        try {
+          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/auth/profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${data.session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            const profileUser = profileData.user;
+
+            // Use complete profile data
+            const userData: UserData = {
+              name: `${profileUser.first_name} ${profileUser.last_name}`,
+              email: profileUser.email,
+              role: profileUser.role,
+            };
+            setAuthStatus(true, userData);
+          } else {
+            // Fallback to basic user data if profile fetch fails
+            const userData: UserData = {
+              name: data.user?.email || formData.email,
+              email: formData.email,
+              role: "Student"
+            };
+            setAuthStatus(true, userData);
+          }
+        } catch {
+          // Fallback to basic user data if profile fetch fails
+          const userData: UserData = {
+            name: data.user?.email || formData.email,
+            email: formData.email,
+            role: "Student"
+          };
+          setAuthStatus(true, userData);
+        }
+
         router.push("/");
       } else {
         setError(data.error || "Invalid email or password");
@@ -74,6 +112,8 @@ export default function LoginPage() {
     setError("");
     try {
       await new Promise(r => setTimeout(r, 1000));
+      // Store a fake token for testing
+      localStorage.setItem('access_token', 'fake_google_token_' + Date.now());
       const userData: UserData = { name: "Google User", email: "googleuser@gmail.com", role: "Student" };
       setAuthStatus(true, userData);
       router.push("/");

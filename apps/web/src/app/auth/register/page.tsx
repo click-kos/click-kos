@@ -21,6 +21,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -83,10 +84,10 @@ export default function RegisterPage() {
         role: formData.role,
         student_number: formData.studentId, // API expects student_number
         faculty: formData.department, // API expects faculty
-        year_of_study: formData.year, // API expects year_of_study
+        year_of_study: parseInt(formData.year), // Convert to number for API
       };
 
-      const response = await fetch('https://api-click-kos.netlify.app/auth/signup', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,8 +98,11 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Registration successful! Please check your email to verify your account.");
-        window.location.href = "/auth/login";
+        setShowSuccess(true);
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 3000);
       } else {
         setError(data.error || "An error occurred during registration. Please try again.");
       }
@@ -140,6 +144,20 @@ export default function RegisterPage() {
             <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
               <span className="text-sm text-red-600 dark:text-red-400">{error}</span>
+            </div>
+          )}
+
+          {showSuccess && (
+            <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-green-800 dark:text-green-200">
+                  Registration Successful!
+                </h3>
+                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                  Please check your email to verify your account. You will be redirected to login in a few seconds.
+                </p>
+              </div>
             </div>
           )}
 
