@@ -9,11 +9,14 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("payment")
-    .select("*")
+    .select("payment_id, order_id, amount, status, method")
     .eq("payment_id", params.id)
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+  if (error) {
+    const status = error.code === "PGRST116" ? 404 : 500;
+    return NextResponse.json({ error: error.message }, { status });
+  }
 
   return NextResponse.json(data);
 }
