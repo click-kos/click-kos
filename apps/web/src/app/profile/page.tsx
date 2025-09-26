@@ -1,56 +1,174 @@
 "use client";
 
-import { useState } from "react";
-import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X, Camera } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X, Camera, AlertCircle } from "lucide-react";
+import { getAccessToken } from "../../lib/auth";
 
-// Mock user data
-const initialUserData = {
-  id: "1",
-  name: "Thuso Ndou",
-  email: "37853058@mynwu.ac.za",
-  phone: "+27 123 456 789",
-  studentId: "37853058",
-  role: "Student",
-  department: "Information Technology",
-  year: "4th Year",
-  address: "Vaal Triangle, South Africa",
-  joinDate: "2022-02-15",
-  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=face&facepad=2&rounded-circle",
-  bio: "Information Technology student passionate about web development and technology innovation."
-};
+interface UserProfile {
+  user_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  profile_image_url?: string;
+  student?: {
+    student_number: string;
+    faculty: string;
+    year_of_study: number;
+  };
+}
 
 export default function ProfilePage() {
-  const [userData, setUserData] = useState(initialUserData);
+  const [userData, setUserData] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState(initialUserData);
-  const [activeTab, setActiveTab] = useState<'info' | 'security' | 'preferences'>('info');
+  const [editedData, setEditedData] = useState<Partial<UserProfile>>({});
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // Get the token from localStorage or wherever it's stored
+        const token = getAccessToken();
+        if (!token) {
+          setError('No authentication token found');
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/auth/profile`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+        const data = await response.json();
+        const user = data.user;
+        setUserData(user);
+        setEditedData(user);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'An error occurred');
+      }
+      setIsLoading(false);
+    };
+
+    fetchProfile();
+  }, []);
+
+  const getOrdinalSuffix = (num: number): string => {
+    if (num === 5) return ' (Postgraduate)';
+    if (num === 6) return ' (PhD)';
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return 'st';
+    if (j === 2 && k !== 12) return 'nd';
+    if (j === 3 && k !== 13) return 'rd';
+    return 'th';
+  };
 
   const handleEditToggle = () => {
     if (isEditing) {
       // Cancel editing - reset to original data
-      setEditedData(userData);
+      setEditedData(userData || {});
     }
     setIsEditing(!isEditing);
   };
 
-  const handleSave = () => {
-    // Save the changes
-    setUserData(editedData);
-    setIsEditing(false);
-    // Here you would typically make an API call to save the data
+  const handleSave = async () => {
+    if (!editedData.student || !userData) return;
+
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        setError('No authentication token found');
+        return;
+      }
+
+      // Update student data
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          faculty: editedData.student.faculty,
+          year_of_study: editedData.student.year_of_study,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      // Update local state
+      const updatedUser = {
+        ...userData,
+        student: {
+          ...userData.student!,
+          faculty: editedData.student.faculty,
+          year_of_study: editedData.student.year_of_study,
+        }
+      };
+      setUserData(updatedUser);
+      setIsEditing(false);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred');
+    }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setEditedData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleInputChange = (field: string, value: string | number) => {
+    if (field === 'faculty' || field === 'year_of_study') {
+      setEditedData(prev => ({
+        ...prev,
+        student: {
+          ...prev.student!,
+          [field]: value
+        }
+      }));
+    }
   };
 
-  const handleAvatarChange = () => {
-    // Implement avatar upload functionality
-    console.log("Avatar change clicked");
-  };
+  if (isLoading) {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#483AA0]"></div>
+            <span className="ml-2">Loading profile...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="text-center text-gray-500">No profile data available</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-6">
@@ -62,10 +180,10 @@ export default function ProfilePage() {
               {/* Avatar */}
               <div className="relative">
                 <div className="w-24 h-24 rounded-full bg-white p-1 shadow-lg overflow-hidden">
-                  {userData.avatar ? (
+                  {userData.profile_image_url ? (
                     <img 
-                      src={userData.avatar} 
-                      alt={userData.name}
+                      src={userData.profile_image_url} 
+                      alt={`${userData.first_name} ${userData.last_name}`}
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
@@ -74,21 +192,13 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-                {isEditing && (
-                  <button
-                    onClick={handleAvatarChange}
-                    className="absolute bottom-0 right-0 bg-[#483AA0] text-white p-2 rounded-full hover:bg-[#7965C1] transition-colors shadow-lg"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </button>
-                )}
               </div>
 
               {/* User Info */}
               <div className="text-white">
-                <h1 className="text-2xl font-bold mb-2">{userData.name}</h1>
-                <p className="text-blue-100 mb-1">{userData.role} • {userData.department}</p>
-                <p className="text-blue-200 text-sm">Student ID: {userData.studentId}</p>
+                <h1 className="text-2xl font-bold mb-2">{userData.first_name} {userData.last_name}</h1>
+                <p className="text-blue-100 mb-1">{userData.role} • {userData.student?.faculty || 'N/A'}</p>
+                <p className="text-blue-200 text-sm">Student ID: {userData.student?.student_number || 'N/A'}</p>
               </div>
             </div>
 
@@ -124,319 +234,107 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex space-x-8 px-6">
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'info'
-                  ? 'border-[#483AA0] text-[#483AA0] dark:text-[#7965C1]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              Personal Info
-            </button>
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'security'
-                  ? 'border-[#483AA0] text-[#483AA0] dark:text-[#7965C1]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              Security
-            </button>
-            <button
-              onClick={() => setActiveTab('preferences')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'preferences'
-                  ? 'border-[#483AA0] text-[#483AA0] dark:text-[#7965C1]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              Preferences
-            </button>
-          </nav>
-        </div>
-
-        {/* Tab Content */}
+        {/* Profile Content */}
         <div className="p-6">
-          {activeTab === 'info' && (
-            <div className="space-y-6">
-              {/* Personal Information */}
-              <div>
-                <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Personal Information</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Full Name
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <User className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-900 dark:text-white">{userData.name}</span>
-                      </div>
-                    )}
+          <div className="space-y-6">
+            {/* Personal Information */}
+            <div>
+              <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Personal Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Full Name
+                  </label>
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900 dark:text-white">{userData.first_name} {userData.last_name}</span>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Email Address
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="email"
-                        value={editedData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-900 dark:text-white">{userData.email}</span>
-                      </div>
-                    )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email Address
+                  </label>
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900 dark:text-white">{userData.email}</span>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Phone Number
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        value={editedData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <Phone className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-900 dark:text-white">{userData.phone}</span>
-                      </div>
-                    )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Student ID
+                  </label>
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <span className="text-gray-900 dark:text-white">{userData.student?.student_number || 'N/A'}</span>
                   </div>
+                </div>
+              </div>
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Student ID
-                    </label>
-                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="text-gray-900 dark:text-white">{userData.studentId}</span>
+            {/* Academic Information */}
+            <div>
+              <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Academic Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Department
+                  </label>
+                  {isEditing ? (
+                    <select
+                      value={editedData.student?.faculty || ''}
+                      onChange={(e) => handleInputChange('faculty', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select Department</option>
+                      <option value="Computer Science">Computer Science</option>
+                      <option value="Engineering">Engineering</option>
+                      <option value="Business Studies">Business Studies</option>
+                      <option value="Arts & Humanities">Arts & Humanities</option>
+                      <option value="Health Sciences">Health Sciences</option>
+                      <option value="Education">Education</option>
+                    </select>
+                  ) : (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span className="text-gray-900 dark:text-white">{userData.student?.faculty || 'N/A'}</span>
                     </div>
-                  </div>
+                  )}
                 </div>
-              </div>
 
-              {/* Academic Information */}
-              <div>
-                <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Academic Information</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Department
-                    </label>
-                    {isEditing ? (
-                      <select
-                        value={editedData.department}
-                        onChange={(e) => handleInputChange('department', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      >
-                        <option>Computer Science</option>
-                        <option>Engineering</option>
-                        <option>Business Studies</option>
-                        <option>Arts & Humanities</option>
-                      </select>
-                    ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span className="text-gray-900 dark:text-white">{userData.department}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Year of Study
-                    </label>
-                    {isEditing ? (
-                      <select
-                        value={editedData.year}
-                        onChange={(e) => handleInputChange('year', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      >
-                        <option>1st Year</option>
-                        <option>2nd Year</option>
-                        <option>3rd Year</option>
-                        <option>4th Year</option>
-                        <option>Postgraduate</option>
-                      </select>
-                    ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span className="text-gray-900 dark:text-white">{userData.year}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Information */}
-              <div>
-                <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Additional Information</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Address
-                    </label>
-                    {isEditing ? (
-                      <textarea
-                        value={editedData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-900 dark:text-white">{userData.address}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Bio
-                    </label>
-                    {isEditing ? (
-                      <textarea
-                        value={editedData.bio}
-                        onChange={(e) => handleInputChange('bio', e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
-                    ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span className="text-gray-900 dark:text-white">{userData.bio}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Member Since
-                    </label>
-                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <Calendar className="w-4 h-4 text-gray-400" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Year of Study
+                  </label>
+                  {isEditing ? (
+                    <select
+                      value={editedData.student?.year_of_study || ''}
+                      onChange={(e) => handleInputChange('year_of_study', parseInt(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select Year</option>
+                      <option value="1">1st Year</option>
+                      <option value="2">2nd Year</option>
+                      <option value="3">3rd Year</option>
+                      <option value="4">4th Year</option>
+                      <option value="5">Postgraduate</option>
+                      <option value="6">PhD</option>
+                    </select>
+                  ) : (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <span className="text-gray-900 dark:text-white">
-                        {new Date(userData.joinDate).toLocaleDateString('en-ZA', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        {userData.student?.year_of_study ? 
+                          userData.student.year_of_study === 5 ? 'Postgraduate' :
+                          userData.student.year_of_study === 6 ? 'PhD' :
+                          `${userData.student.year_of_study}${getOrdinalSuffix(userData.student.year_of_study)} Year`
+                          : 'N/A'
+                        }
                       </span>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
-          )}
-
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Security Settings</h2>
-                <div className="space-y-4">
-                  <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-2">Change Password</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Update your password to keep your account secure
-                    </p>
-                    <button className="px-4 py-2 bg-[#483AA0] text-white rounded-lg hover:bg-[#0E2148] transition-colors">
-                      Change Password
-                    </button>
-                  </div>
-
-                  <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-2">Two-Factor Authentication</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Add an extra layer of security to your account
-                    </p>
-                    <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                      Enable 2FA
-                    </button>
-                  </div>
-
-                  <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-2">Active Sessions</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Manage your active login sessions
-                    </p>
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                      View Sessions
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'preferences' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Preferences</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Email Notifications</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Receive order updates via email</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#483AA0]"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Push Notifications</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Get notified about order status changes</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#483AA0]"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">Marketing Communications</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Receive promotional offers and updates</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#483AA0]"></div>
-                    </label>
-                  </div>
-
-                  <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-2">Language</h3>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#483AA0] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                      <option>English</option>
-                      <option>Afrikaans</option>
-                      <option>Zulu</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
