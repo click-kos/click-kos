@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { Search, ShoppingCart, Star, Clock, TrendingUp, ChefHat, Heart, Filter } from "lucide-react";
+import Link from "next/link";
+import { useCart } from "../context/CartContext";
+import { id } from "zod/locales";
+
 
 // Mock data for featured items
 const featuredItems = [
@@ -77,10 +81,8 @@ export default function Home() {
     );
   };
 
-  const addToCart = (itemId: number) => {
-    setCartItems(prev => prev + 1);
-    // Here you would implement actual cart functionality
-  };
+  const { addToCart, cartCount } = useCart();
+
 
   const filteredItems = featuredItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -131,10 +133,16 @@ export default function Home() {
             <Filter className="w-4 h-4 text-gray-600 dark:text-gray-400" />
             <span className="text-gray-700 dark:text-gray-300">Filters</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-3 bg-[#7965C1] text-white rounded-xl hover:bg-[#483AA0] transition-colors shadow-sm">
+         
+            <Link href="/cart">
+            <button className="flex items-center gap-2 px-4 py-3 bg-[#7965C1] text-white rounded-xl hover:bg-[#483AA0] transition-colors shadow-sm">
             <ShoppingCart className="w-4 h-4" />
-            <span>Cart ({cartItems})</span>
-          </button>
+            <span>Cart ({cartCount})</span>
+            </button>
+            </Link>
+          
+          
+          
         </div>
       </div>
 
@@ -245,8 +253,10 @@ export default function Home() {
                 </div>
 
                 {/* Add to Cart Button */}
+                
                 <button
-                  onClick={() => addToCart(item.id)}
+                  
+                  onClick={() => addToCart(item)}
                   className="w-full bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white py-2 px-4 rounded-lg hover:from-[#0E2148] hover:to-[#483AA0] transition-all duration-300 font-medium"
                 >
                   Add to Cart

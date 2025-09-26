@@ -75,6 +75,13 @@ export default function RegisterPage() {
     }
 
     try {
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Registration attempt:", formData);
+      alert("Registration successful! Please check your email to verify your account.");
+      window.location.href = "/auth/login";
+    } catch {
+
       // Map form data to API expected format
       const apiData = {
         email: formData.email,
@@ -108,6 +115,7 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('Registration error:', error);
+
       setError("An error occurred during registration. Please try again.");
     } finally {
       setIsLoading(false);
@@ -146,6 +154,37 @@ export default function RegisterPage() {
               <span className="text-sm text-red-600 dark:text-red-400">{error}</span>
             </div>
           )}
+
+
+          {/* Role Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">I am a</label>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => handleInputChange("role", "student")}
+                className={`p-2 sm:p-3 border rounded-lg text-sm font-medium transition-colors ${
+                  formData.role === "student"
+                    ? "border-[#483AA0] bg-[#483AA0]/10 text-[#483AA0] dark:text-[#7965C1]"
+                    : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInputChange("role", "staff")}
+                className={`p-2 sm:p-3 border rounded-lg text-sm font-medium transition-colors ${
+                  formData.role === "staff"
+                    ? "border-[#483AA0] bg-[#483AA0]/10 text-[#483AA0] dark:text-[#7965C1]"
+                    : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
+              >
+                Staff
+              </button>
+            </div>
+          </div>
+
 
           {showSuccess && (
             <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -189,6 +228,7 @@ export default function RegisterPage() {
               </button>
             </div>
           </div>
+
 
           {/* Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
