@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "./ui/sonner";
+import { CartProvider } from '../context/CartContext';
 
 
 export default function Providers({
@@ -16,8 +17,11 @@ export default function Providers({
       enableSystem
       disableTransitionOnChange
     >
-      {children}
-      <Toaster richColors />
+      <CartProvider> 
+        {children}
+        <Toaster richColors />
+      </CartProvider>
+      
     </ThemeProvider>
   );
 }
