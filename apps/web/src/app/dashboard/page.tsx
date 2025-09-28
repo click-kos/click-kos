@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import {
   Package,
@@ -20,7 +20,18 @@ import {
   RotateCcw,
   MessageSquare,
   Star,
+  Plus,
+  Search,
+  BookOpen,
+  DollarSign,
+  Tag,
+  ToggleLeft,
+  ToggleRight,
+  Image,
 } from "lucide-react";
+
+// --- API Endpoint Definition (for reference) ---
+const MENU_API_BASE_URL = "https://api-click-kos.netlify.app/menu";
 
 // Define interfaces for types
 interface ModalProps {
@@ -45,11 +56,25 @@ interface Order {
   feedback?: boolean;
 }
 
+interface MenuItemImage {
+  url: string;
+}
+
+interface MenuItem {
+  item_id: string;
+  name: string;
+  price: number; // Stored as a number in the DB
+  description: string;
+  available: boolean;
+  category: string;
+  item_image?: MenuItemImage[];
+}
+
 // Reusable Modal Component with fixed backdrop styling
 const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 relative">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-xl font-semibold text-[#0E2148] dark:text-white">{title}</h3>
           <button
@@ -61,6 +86,547 @@ const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => {
         </div>
         <div className="py-4">{children}</div>
       </div>
+    </div>
+  );
+};
+
+// --- New Staff Components ---
+
+// Form for adding/updating a menu item
+interface MenuItemFormProps {
+  initialData?: MenuItem;
+  onSubmit: (data: Partial<MenuItem> & { imageUrl?: string }) => void;
+  isSubmitting: boolean;
+}
+
+const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialData, onSubmit, isSubmitting }) => {
+  const [formData, setFormData] = useState<Partial<MenuItem> & { imageUrl?: string; imageFile?: File }>(
+    initialData
+      ? { ...initialData, imageUrl: initialData.item_image?.[0]?.url || "", imageFile: undefined }
+      : {
+          name: "",
+          price: 0,
+          description: "",
+          available: true,
+          category: "",
+          imageUrl: "",
+          imageFile: undefined,
+        }
+  );
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, imageFile: e.target.files?.[0] }));
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: type === "number" ? parseFloat(value) : type === "checkbox" ? (e.target as HTMLInputElement).checked : value }));
+  };
+
+  const handleToggle = (name: keyof MenuItem) => {
+    setFormData((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input type="hidden" name="item_id" value={formData.item_id || ""} />
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+        <input id="name" name="name" type="text" required value={formData.name || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+      </div>
+      <div>
+        <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price (R)</label>
+        <input id="price" name="price" type="number" step="0.01" required min="0" value={formData.price || 0} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+      </div>
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+        <textarea id="description" name="description" rows={3} required value={formData.description || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" ></textarea>
+      </div>
+      <div>
+        <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+        <input id="category" name="category" type="text" required value={formData.category || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+      </div>
+      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+        <label htmlFor="available" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <Tag className="w-4 h-4 text-[#483AA0]" />
+          Available for Order
+        </label>
+        <button type="button" onClick={() => handleToggle("available")} className={`relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#483AA0] ${formData.available ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-600'}`} role="switch" aria-checked={formData.available}>
+          <span aria-hidden="true" className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200 ${formData.available ? 'translate-x-5' : 'translate-x-0'}`}></span>
+        </button>
+      </div>
+      <div>
+        <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300"> Image </label>
+        <input id="image" name="image" type="file" accept="image/*" onChange={handleImageChange} className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#483AA0] file:text-white hover:file:bg-[#3d3184]" />
+      </div>
+      <div>
+        <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Image URL (Optional)</label>
+        <input id="imageUrl" name="imageUrl" type="url" value={formData.imageUrl || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+      </div>
+      <div className="flex justify-end pt-4 border-t dark:border-gray-700">
+        <button type="submit" disabled={isSubmitting} className={`px-4 py-2 rounded-full font-semibold text-white transition-colors ${isSubmitting ? "bg-[#483AA0]/60 cursor-not-allowed" : "bg-[#483AA0] hover:bg-[#3d3184]"}`}>
+          {isSubmitting ? "Saving..." : initialData ? "Update Item" : "Add Item"}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// Modal for updating a menu item
+interface UpdateMenuItemModalProps {
+  item: MenuItem;
+  onClose: () => void;
+  onUpdate: (data: Partial<MenuItem> & { imageUrl?: string }) => void;
+  isSubmitting: boolean;
+}
+
+const UpdateMenuItemModal: React.FC<UpdateMenuItemModalProps> = ({ item, onClose, onUpdate, isSubmitting }) => {
+  const handleSubmit = (data: Partial<MenuItem> & { imageUrl?: string }) => {
+    onUpdate(data);
+  };
+
+  return (
+    <Modal title={`Update Menu Item: ${item.name}`} onClose={onClose}>
+      <MenuItemForm initialData={item} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+    </Modal>
+  );
+};
+
+// Modal for adding a new menu item
+interface AddMenuItemModalProps {
+  onClose: () => void;
+  onAdd: (data: Partial<MenuItem> & { imageUrl?: string }) => void;
+  isSubmitting: boolean;
+}
+
+const AddMenuItemModal: React.FC<AddMenuItemModalProps> = ({ onClose, onAdd, isSubmitting }) => {
+  const handleSubmit = (data: Partial<MenuItem> & { imageUrl?: string }) => {
+    onAdd(data);
+  };
+
+  return (
+    <Modal title="Add New Menu Item" onClose={onClose}>
+      <MenuItemForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+    </Modal>
+  );
+};
+
+// Component for a single menu item
+interface MenuItemCardProps {
+  item: MenuItem;
+  onUpdateClick: (item: MenuItem) => void;
+}
+
+const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onUpdateClick }) => {
+  return (
+    <div className="flex bg-gray-50 dark:bg-gray-700 rounded-lg shadow-md overflow-hidden transition-shadow hover:shadow-lg">
+      {/* Invisible Item ID for staff */}
+      <span className="sr-only">Item ID: {item.item_id}</span>
+      
+      {/* Image Section */}
+      <div className="w-24 h-24 flex-shrink-0">
+        {item.item_image && item.item_image.length > 0 ? (
+          <img src={item.item_image?.[0]?.url} alt={item.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400">
+            <Image className="w-8 h-8" />
+          </div>
+        )}
+      </div>
+      
+      {/* Details Section */}
+      <div className="p-3 flex-grow flex flex-col justify-between">
+        <h3 className="text-lg font-semibold text-[#0E2148] dark:text-white truncate">
+          {item.name}
+        </h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 line-clamp-2">
+          {item.description}
+        </p>
+        <div className="flex justify-between items-end mt-auto">
+          <div className="flex flex-col">
+            <span className="text-base font-bold text-green-600 dark:text-green-400">
+              R{item.price.toFixed(2)}
+            </span>
+            <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+              item.available 
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+            }`}>
+              {item.available ? 'Available' : 'Unavailable'}
+            </span>
+          </div>
+          <button 
+            onClick={() => onUpdateClick(item)} 
+            className="px-3 py-1 text-sm rounded-full bg-[#483AA0] text-white hover:bg-[#3d3184] transition-colors shadow-md"
+          >
+            Update
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
+
+
+
+// Menu Management Component
+const MenuManagement: React.FC = () => {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Mock API Call (Replace with actual fetch logic)
+  
+const fetchMenuItems = useCallback(async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    if (!process.env.NEXT_PUBLIC_SERVER_URL) {
+      throw new Error("NEXT_PUBLIC_SERVER_URL is not defined.");
+    }
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch menu items.");
+    }
+    const result = await response.json();
+    console.log("API Response:", result);
+    setMenuItems(result.data); // Update this line
+  } catch (err: any) {
+    setError(err.message || "An unknown error occurred while fetching menu.");
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, [fetchMenuItems]);
+
+  // Filtering Logic
+  const filteredMenuItems = useMemo(() => {
+    if (!searchTerm) return menuItems;
+    const lowerCaseSearch = searchTerm.toLowerCase();
+    return menuItems.filter(
+      (item) =>
+        item.name.toLowerCase().includes(lowerCaseSearch) ||
+        item.description.toLowerCase().includes(lowerCaseSearch) ||
+        item.category.toLowerCase().includes(lowerCaseSearch)
+    );
+  }, [menuItems, searchTerm]);
+
+  // Handler for update modal
+  const handleUpdateClick = (item: MenuItem) => {
+    setSelectedItem(item);
+  };
+
+  // API Submission Handlers
+  const handleApiAction = async (
+    url: string,
+    method: "POST" | "PUT",
+    data: Partial<MenuItem> & { imageUrl?: string }
+  ) => {
+    setIsSubmitting(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      // MOCK API logic
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
+      
+      const isNew = method === "POST";
+      const newItemId = isNew ? `MI-${Math.floor(Math.random() * 1000) + 100}` : data.item_id;
+      
+      const newOrUpdatedItem: MenuItem = {
+        item_id: newItemId!,
+        name: data.name || "",
+        price: data.price || 0,
+        description: data.description || "",
+        available: data.available ?? true,
+        category: data.category || "",
+        item_image: data.imageUrl ? [{ url: data.imageUrl }] : undefined,
+      };
+
+      if (isNew) {
+        setMenuItems((prev) => [newOrUpdatedItem, ...prev]);
+        setSuccessMessage("Menu item added successfully!");
+      } else {
+        setMenuItems((prev) =>
+          prev.map((item) => (item.item_id === newItemId ? newOrUpdatedItem : item))
+        );
+        setSuccessMessage("Menu item updated successfully!");
+      }
+      // END MOCK
+
+      // Actual fetch would look like this:
+      /*
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error?.name || errData.error?.message || "API error occurred.");
+      }
+      setSuccessMessage(`Menu item ${isNew ? 'added' : 'updated'} successfully!`);
+      fetchMenuItems(); // Refresh data from server
+      */
+
+      setSelectedItem(null);
+      setIsAddModalOpen(false);
+
+    } catch (err: any) {
+      setError(err.message || "Failed to complete action.");
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setSuccessMessage(null), 3000); // Clear success after 3s
+    }
+  };
+
+  const handleUpdateSubmit = async (data: Partial<MenuItem> & { imageUrl?: string; imageFile?: File }) => {
+  if (!selectedItem) return;
+
+  try {
+    let imageUrl = data.imageUrl;
+    if (data.imageFile) {
+      const formData = new FormData();
+      formData.append('file', data.imageFile);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${selectedItem.item_id}/images`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+      const imageData = await response.json();
+      imageUrl = imageData.url;
+    }
+
+    const updatedData = {
+      name: data.name,
+      price: data.price,
+      description: data.description,
+      available: data.available,
+      category: data.category,
+      imageUrl,
+    };
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${selectedItem.item_id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedData),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update menu item');
+    }
+
+    setSuccessMessage('Menu item updated successfully!');
+    fetchMenuItems();
+    setSelectedItem(null);
+  } catch (error: any) {
+    setError(error.message || 'Failed to update menu item');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  const handleAddSubmit = async (data: Partial<MenuItem> & { imageUrl?: string; imageFile?: File }) => {
+  try {
+    // Create a new menu item without an image
+    const newData = {
+      name: data.name,
+      price: data.price,
+      description: data.description,
+      available: data.available,
+      category: data.category,
+    };
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newData),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add menu item');
+    }
+
+    const menuItemData = await response.json();
+    const menuItemId = menuItemData.data.item_id;
+
+    // Upload the image
+    if (data.imageFile) {
+      const formData = new FormData();
+      formData.append('file', data.imageFile, data.imageFile.name); // Add the file name
+      const imageResponse = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${menuItemId}/images`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!imageResponse.ok) {
+        const errorData = await imageResponse.json();
+        throw new Error(errorData.error || 'Failed to upload image');
+      }
+    }
+
+    setSuccessMessage('Menu item added successfully!');
+    fetchMenuItems();
+    setIsAddModalOpen(false);
+  } catch (error: any) {
+    setError(error.message || 'Failed to add menu item');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
+        <BookOpen className="w-5 h-5 text-[#483AA0]" />
+        Menu Management
+      </h2>
+
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Search Box */}
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search menu items..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#483AA0]"
+          />
+        </div>
+
+        {/* Add New Item Button */}
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center justify-center px-4 py-2 rounded-lg bg-[#483AA0] text-white font-semibold hover:bg-[#3d3184] transition-colors flex-shrink-0"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add New Item
+        </button>
+      </div>
+      
+      {/* Messages */}
+      {error && (
+        <div className="p-3 mb-4 bg-red-100 dark:bg-red-900 border border-red-400 rounded text-red-800 dark:text-red-200 flex items-center">
+          <XCircle className="w-5 h-5 mr-2" /> {error}
+        </div>
+      )}
+      {successMessage && (
+        <div className="p-3 mb-4 bg-green-100 dark:bg-green-900 border border-green-400 rounded text-green-800 dark:text-green-200 flex items-center">
+          <CheckCircle2 className="w-5 h-5 mr-2" /> {successMessage}
+        </div>
+      )}
+
+      {/* Menu Item List */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          <RotateCcw className="w-8 h-8 mx-auto mb-2 animate-spin text-[#483AA0]" />
+          <p>Loading menu items...</p>
+        </div>
+      ) : filteredMenuItems.length === 0 ? (
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p>No menu items found matching "{searchTerm}"</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredMenuItems.map((item) => (
+            <MenuItemCard key={item.item_id} item={item} onUpdateClick={handleUpdateClick} />
+          ))}
+        </div>
+      )}
+
+      {/* Modals */}
+      {selectedItem && (
+        <UpdateMenuItemModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onUpdate={handleUpdateSubmit}
+          isSubmitting={isSubmitting}
+        />
+      )}
+      {isAddModalOpen && (
+        <AddMenuItemModal
+          onClose={() => setIsAddModalOpen(false)}
+          onAdd={handleAddSubmit}
+          isSubmitting={isSubmitting}
+        />
+      )}
+    </div>
+  );
+};
+
+
+// The main StaffDashboard component - updated to include MenuManagement
+const DashboardSection: React.FC<{title: string; icon: ReactNode; children: ReactNode}> = ({ title, icon, children }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+    <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
+      {icon}
+      {title}
+    </h2>
+    {children}
+  </div>
+);
+
+const StaffDashboard: React.FC = () => {
+  return (
+    <div>
+      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Staff Dashboard</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <OrderQueue />
+        </div>
+        <div className="space-y-4">
+          <div className="bg-gradient-to-r from-[#0E2148] to-[#483AA0] text-white rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Pending Orders</p>
+                <p className="text-2xl font-bold">8</p>
+              </div>
+              <Clock className="w-8 h-8 opacity-75" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Active Staff</p>
+                <p className="text-2xl font-bold">4</p>
+              </div>
+              <Users className="w-8 h-8 opacity-75" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-[#7965C1] to-[#483AA0] text-white rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Avg Wait Time</p>
+                <p className="text-2xl font-bold">12min</p>
+              </div>
+              <TrendingUp className="w-8 h-8 opacity-75" />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* New Menu Management Section */}
+      <MenuManagement />
+      
     </div>
   );
 };
@@ -296,71 +862,6 @@ const OrderQueue: React.FC = () => {
   );
 };
 
-// The main StaffDashboard component
-const StaffDashboard: React.FC = () => {
-  return (
-    <div>
-      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Staff Dashboard</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2">
-          <OrderQueue />
-        </div>
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-[#0E2148] to-[#483AA0] text-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Pending Orders</p>
-                <p className="text-2xl font-bold">8</p>
-              </div>
-              <Clock className="w-8 h-8 opacity-75" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Active Staff</p>
-                <p className="text-2xl font-bold">4</p>
-              </div>
-              <Users className="w-8 h-8 opacity-75" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-[#7965C1] to-[#483AA0] text-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Avg Wait Time</p>
-                <p className="text-2xl font-bold">12min</p>
-              </div>
-              <TrendingUp className="w-8 h-8 opacity-75" />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => (window.location.href = "/menu")}
-            className="p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#483AA0] transition-colors text-center"
-          >
-            <span className="text-sm text-gray-600 dark:text-gray-400">Update Menu Item</span>
-          </button>
-          <button
-            onClick={() => (window.location.href = "/menu")}
-            className="p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#483AA0] transition-colors text-center"
-          >
-            <span className="text-sm text-gray-600 dark:text-gray-400">Mark Item Unavailable</span>
-          </button>
-          <button
-            onClick={() => (window.location.href = "/analytics")}
-            className="p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#483AA0] transition-colors text-center"
-          >
-            <span className="text-sm text-gray-600 dark:text-gray-400">View Reports</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // FeedbackModal component for students to leave feedback
 interface FeedbackModalProps {
@@ -377,10 +878,13 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ order, onClose, onSubmit 
     setRating(newRating);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(rating, comment);
-  };
+
+const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  // Add your logic here to handle the form submission
+  // For example, you can call the onSubmit prop and pass the rating and comment
+  onSubmit(rating, comment);
+};
 
   return (
     <Modal title={`Leave Feedback for Order ${order.id}`} onClose={onClose}>
