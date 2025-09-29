@@ -1,16 +1,111 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Search,
-  Filter,
-  ShoppingCart,
-  Star,
-  Clock,
-  Heart,
-  ChefHat,
-  TrendingUp,
-} from "lucide-react";
+import { useState } from "react";
+import Link from "next/link"; 
+import { Search, Filter, ShoppingCart, Star, Clock, Heart, ChefHat, TrendingUp } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+
+const featuredItems = [
+  {
+    id: 1,
+    name: "Bunny Chow",
+    description: "Traditional South African curry served in a hollowed-out bread loaf",
+    price: 45.0,
+    image: "https://media.audleytravel.com/-/media/images/home/africa/south-africa/country-guides/south-africa-beyond-safari-and-wine/shutterstock_2283389403_bunny_chow.jpg?q=79&w=800&h=571",
+    rating: 4.8,
+    cookTime: "15 min",
+    category: "traditional",
+    isPopular: true,
+  },
+  {
+    id: 2,
+    name: "Boerewors Roll",
+    description: "Grilled South African sausage in a fresh roll with relish",
+    price: 32.0,
+    image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300&h=200&fit=crop",
+    rating: 4.6,
+    cookTime: "10 min",
+    category: "grill",
+    isPopular: true,
+  },
+  {
+    id: 3,
+    name: "Gatsby",
+    description: "Cape Town submarine sandwich with chips, meat, and sauce",
+    price: 58.0,
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=200&fit=crop",
+    rating: 4.7,
+    cookTime: "12 min",
+    category: "sandwich",
+    isPopular: false,
+  },
+  {
+    id: 4,
+    name: "Bobotie",
+    description: "Traditional spiced mince dish with egg topping and rice",
+    price: 52.0,
+    image: "https://images.unsplash.com/photo-1574484284002-952d92456975?w=300&h=200&fit=crop",
+    rating: 4.5,
+    cookTime: "20 min",
+    category: "traditional",
+    isPopular: false,
+  },
+  {
+    id: 5,
+    name: "Pizza",
+    description: "Traditional South African curry served in a hollowed-out bread loaf",
+    price: 45.0,
+    image: "https://ristorante-classico.de/de-wAssets/img/adobe-stock/speisen/AdobeStock_60447569.jpeg",
+    rating: 4.8,
+    cookTime: "15 min",
+    category: "traditional",
+    isPopular: true,
+  },
+  {
+    id: 6,
+    name: "Sausage Roll",
+    description: "Grilled South African sausage in a fresh roll with relish",
+    price: 32.0,
+    image: "https://tse4.mm.bing.net/th/id/OIP.iPVFDnsVT-M0xhsHtoDQAQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3",
+    rating: 4.6,
+    cookTime: "10 min",
+    category: "grill",
+    isPopular: true,
+  },
+  {
+    id: 7,
+    name: "Sandwich",
+    description: "Cape Town submarine sandwich with chips, meat, and sauce",
+    price: 58.0,
+    image: "https://th.bing.com/th/id/R.2f3efd9008afc099c62f2b894ed96a05?rik=LofYM3CE5wPZaw&pid=ImgRaw&r=0",
+    rating: 4.7,
+    cookTime: "12 min",
+    category: "sandwich",
+    isPopular: false,
+  },
+  {
+    id: 8,
+    name: "Choc Chip Muffins",
+    description: "Delicious baked goods, perfect for breakfast or a snack",
+    price: 52.0,
+    image: "https://th.bing.com/th/id/R.eed34a85407d4eb39dd31ed95f3303ba?rik=IBv3CJ%2fS059jwA&pid=ImgRaw&r=0",
+    rating: 4.5,
+    cookTime: "20 min",
+    category: "traditional",
+    isPopular: false,
+  },
+  {
+    id: 9,
+    name: "Coca Cola",
+    description: "Refreshing soft drink",
+    price: 25.0,
+    image: "https://www.mashed.com/img/gallery/a-can-of-coca-cola-is-being-sold-for-over-300000/l-intro-1683831628.jpg",
+    rating: 4.5,
+    cookTime: "20 min",
+    category: "beverages",
+    isPopular: false,
+  },
+];
 
 const categories = [
   { id: "all", name: "All Items", icon: ChefHat },
@@ -19,6 +114,8 @@ const categories = [
   { id: "sandwich", name: "Sandwiches", icon: Star },
   { id: "beverages", name: "Beverages", icon: Clock },
 ];
+
+
 
 export default function MenuPage() {
   const [featuredItems, setFeaturedItems] = useState<any[]>([]);
@@ -65,9 +162,8 @@ export default function MenuPage() {
     );
   };
 
-  const addToCart = (itemId: number) => {
-    setCartItems((prev) => prev + 1);
-  };
+  const { addToCart, cartCount } = useCart();
+
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
@@ -91,10 +187,12 @@ export default function MenuPage() {
             <Filter className="w-4 h-4" />
             Filters
           </button>
+          <Link href="/cart">
           <button className="flex items-center gap-2 px-4 py-2 bg-[#7965C1] text-white rounded-lg hover:bg-[#483AA0] transition-colors">
             <ShoppingCart className="w-4 h-4" />
-            Cart ({cartItems})
+            Cart ({cartCount})
           </button>
+          </Link>
         </div>
       </div>
 
@@ -180,7 +278,9 @@ export default function MenuPage() {
                     </p>
 
                     <button
-                      onClick={() => addToCart(item.item_id)}
+
+                      onClick={() => addToCart(item)}
+
                       className="w-full bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white py-2 px-4 rounded-lg hover:from-[#0E2148] hover:to-[#483AA0] transition-all duration-300 font-medium"
                     >
                       Add to Cart
