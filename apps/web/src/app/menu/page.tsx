@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useState } from "react";
 import Link from "next/link"; 
 import { Search, Filter, ShoppingCart, Star, Clock, Heart, ChefHat, TrendingUp } from "lucide-react";
@@ -119,10 +118,43 @@ const categories = [
 
 
 export default function MenuPage() {
+  const [featuredItems, setFeaturedItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [cartItems, setCartItems] = useState(0);
   const [favorites, setFavorites] = useState<number[]>([]);
+
+  // Fetch menu items
+  useEffect(() => {
+  const loadMenu = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (selectedCategory !== "all") params.append("category", selectedCategory);
+      if (searchTerm.trim() !== "") params.append("keyword", searchTerm.trim());
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu`);
+      
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const resData = await res.json();
+      setFeaturedItems(resData.data || []);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Failed to load menu. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadMenu();
+}, [selectedCategory, searchTerm]);
+
+
 
   const toggleFavorite = (itemId: number) => {
     setFavorites((prev) =>
@@ -132,15 +164,6 @@ export default function MenuPage() {
 
   const { addToCart, cartCount } = useCart();
 
-
-  const filteredItems = featuredItems.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
@@ -202,36 +225,39 @@ export default function MenuPage() {
 
         {/* Menu Items */}
         <div className="md:col-span-3">
-          {filteredItems.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-16 text-gray-500 dark:text-gray-400">Loading menu...</div>
+          ) : error ? (
+            <div className="text-center py-16 text-red-500">{error}</div>
+          ) : featuredItems.length === 0 ? (
+            <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+              No menu items match your search.
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item) => (
+              {featuredItems.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.item_id}
                   className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   {/* Image */}
                   <div className="relative h-40 overflow-hidden">
                     <img
-                      src={item.image}
+                      src={item.item_image?.[0]?.url}
                       alt={item.name}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
-                    {item.isPopular && (
-                      <div className="absolute top-3 left-3 bg-[#483AA0] text-white px-2 py-1 rounded-full text-xs font-medium">
-                        Popular
-                      </div>
-                    )}
                     <button
-                      onClick={() => toggleFavorite(item.id)}
+                      onClick={() => toggleFavorite(item.item_id)}
                       className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
-                        favorites.includes(item.id)
+                        favorites.includes(item.item_id)
                           ? "bg-red-100 text-red-600"
                           : "bg-white/80 text-gray-600 hover:bg-white hover:text-red-600"
                       }`}
                     >
                       <Heart
                         className={`w-4 h-4 ${
-                          favorites.includes(item.id) ? "fill-current" : ""
+                          favorites.includes(item.item_id) ? "fill-current" : ""
                         }`}
                       />
                     </button>
@@ -251,19 +277,10 @@ export default function MenuPage() {
                       {item.description}
                     </p>
 
-                    <div className="flex items-center gap-4 mb-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span>{item.rating}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span>{item.cookTime}</span>
-                      </div>
-                    </div>
-
                     <button
+
                       onClick={() => addToCart(item)}
+
                       className="w-full bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white py-2 px-4 rounded-lg hover:from-[#0E2148] hover:to-[#483AA0] transition-all duration-300 font-medium"
                     >
                       Add to Cart
@@ -272,16 +289,9 @@ export default function MenuPage() {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-              <p className="text-lg">No menu items match your search.</p>
-            </div>
           )}
         </div>
       </div>
     </div>
   );
 }
-
-
-
