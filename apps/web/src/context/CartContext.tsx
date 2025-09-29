@@ -47,7 +47,14 @@ export const CartProvider: React.FC<cartProviderProps> = ({ children }) => {
 }
 
 const removeFromCart =(id: number) => {
-    setCartItems(prev =>prev.filter(item =>item.id !== id));
+    setCartItems(prev => {
+        const newItems = [...prev];
+        const index = newItems.findIndex(item => item.id === id);
+        if (index !== -1) {
+            newItems.splice(index, 1);
+        }
+        return newItems;
+    });
     setCartCount(prev => (prev > 0 ? prev - 1 : 0));
 }
 

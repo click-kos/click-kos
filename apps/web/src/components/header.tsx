@@ -147,7 +147,7 @@ export default function Header() {
   }, []);
 
   return (
-    <div>
+    <div className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 z-50">
       <div className="flex flex-row items-center justify-between px-4 py-3">
         {/* Logo/Brand Area */}
         <div className="flex items-center">
