@@ -188,7 +188,7 @@ export default function Home() {
       </div>
 
       {/* Featured Items Grid */}
-      <div>
+      <div className="featured-items">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[#0E2148] dark:text-white">
             {selectedCategory === "all" ? "Featured Items" : `${categories.find(c => c.id === selectedCategory)?.name} Items`}

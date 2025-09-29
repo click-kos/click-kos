@@ -85,11 +85,7 @@ export default function Header() {
 
     // Listen for storage changes (when login/logout happens in other tabs/windows)
     const handleStorageChange = (e: StorageEvent) => {
-
-      if (e.key === "isAuthenticated" || e.key === "user") {
-
       if (e.key === "isAuthenticated" || e.key === "user" || e.key === "access_token") {
-
         checkAuthStatus();
       }
     };
@@ -185,24 +181,6 @@ export default function Header() {
             ></div>
           )}
 
-          <nav
-            className={`${
-              mobileNavOpen ? "flex" : "hidden"
-            } lg:flex flex-col lg:w-fit w-2/3 z-50 bottom-0 h-screen lg:h-fit right-0 left-0 absolute lg:relative lg:flex-row space-x-1 bg-gray-100 dark:bg-gray-800 p-1 lg:rounded-lg`}
-          >
-            {mobileNavOpen && (
-              <div className="flex justify-between items-center lg:hidden">
-                {/* Mobile Menu */}
-                <h2 className="text-lg font-bold text-[#0E2148] dark:text-white">
-                  Menu
-                </h2>
-                <Button
-                  variant="ghost"
-                  className="text-[#0E2148] dark:text-white"
-                  size="default"
-                  onClick={toggleMobileNav}
-                >
-                  <X />
 
           <nav
             className={`${
@@ -231,11 +209,7 @@ export default function Header() {
                 key={tab.id}
                 href={tab.href}
                 onClick={() => setMobileNavOpen(false)}
-
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-
                 className={`px-4 py-3 lg:py-2 rounded-lg lg:rounded-md text-sm lg:text-sm font-medium transition-colors mb-2 lg:mb-0 ${
-
                   isActiveTab(tab.href)
                     ? "bg-[#483AA0] text-white shadow-sm"
                     : "text-gray-700 dark:text-gray-300 lg:text-gray-600 dark:lg:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hover:text-[#483AA0] dark:lg:hover:text-[#7965C1]"
