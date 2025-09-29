@@ -185,7 +185,7 @@ export default function Header() {
           <nav
             className={`${
               mobileNavOpen ? "flex" : "hidden"
-            } lg:flex flex-col lg:w-fit w-72 z-50 bottom-0 h-screen lg:h-fit right-0 left-0 absolute lg:relative lg:flex-row space-x-1 bg-white dark:bg-gray-800 lg:bg-gray-100 dark:lg:bg-gray-800 p-4 lg:p-1 lg:rounded-lg border lg:border-0 border-gray-200 dark:border-gray-700`}
+            } lg:flex flex-col lg:w-fit w-72 z-50 top-0 h-screen lg:h-fit right-0 left-0 absolute lg:relative lg:flex-row space-x-1 bg-white dark:bg-gray-800 lg:bg-gray-100 dark:lg:bg-gray-800 p-4 lg:p-1 lg:rounded-lg border lg:border-0 border-gray-200 dark:border-gray-700`}
           >
             {mobileNavOpen && (
               <div className="flex justify-between items-center lg:hidden mb-4">
