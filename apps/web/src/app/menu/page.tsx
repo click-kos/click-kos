@@ -1,7 +1,10 @@
 "use client";
 
+
 import { useState } from "react";
+import Link from "next/link"; 
 import { Search, Filter, ShoppingCart, Star, Clock, Heart, ChefHat, TrendingUp } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 
 const featuredItems = [
   {
@@ -113,6 +116,8 @@ const categories = [
   { id: "beverages", name: "Beverages", icon: Clock },
 ];
 
+
+
 export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -125,9 +130,8 @@ export default function MenuPage() {
     );
   };
 
-  const addToCart = (itemId: number) => {
-    setCartItems((prev) => prev + 1);
-  };
+  const { addToCart, cartCount } = useCart();
+
 
   const filteredItems = featuredItems.filter((item) => {
     const matchesSearch =
@@ -160,10 +164,12 @@ export default function MenuPage() {
             <Filter className="w-4 h-4" />
             Filters
           </button>
+          <Link href="/cart">
           <button className="flex items-center gap-2 px-4 py-2 bg-[#7965C1] text-white rounded-lg hover:bg-[#483AA0] transition-colors">
             <ShoppingCart className="w-4 h-4" />
-            Cart ({cartItems})
+            Cart ({cartCount})
           </button>
+          </Link>
         </div>
       </div>
 
@@ -257,7 +263,7 @@ export default function MenuPage() {
                     </div>
 
                     <button
-                      onClick={() => addToCart(item.id)}
+                      onClick={() => addToCart(item)}
                       className="w-full bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white py-2 px-4 rounded-lg hover:from-[#0E2148] hover:to-[#483AA0] transition-all duration-300 font-medium"
                     >
                       Add to Cart
