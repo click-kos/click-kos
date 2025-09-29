@@ -303,7 +303,7 @@ const fetchMenuItems = useCallback(async () => {
     }
     const result = await response.json();
     console.log("API Response:", result);
-    setMenuItems(result.data); // Update this line
+    setMenuItems(result.data);
   } catch (err: any) {
     setError(err.message || "An unknown error occurred while fetching menu.");
   } finally {
