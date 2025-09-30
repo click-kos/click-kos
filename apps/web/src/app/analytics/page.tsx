@@ -18,16 +18,6 @@ import {
   Legend
 } from "recharts";
 
-// Hardcoded data for testing other charts
-const salesData = [
-  { name: "Mon", revenue: 6000 },
-  { name: "Tue", revenue: 7500 },
-  { name: "Wed", revenue: 5000 },
-  { name: "Thu", revenue: 10000 },
-  { name: "Fri", revenue: 15500 },
-  { name: "Sat", revenue: 4000 },
-];
-
 const peakHours = [
   { hour: "9AM", orders: 20 },
   { hour: "12PM", orders: 200 },
@@ -42,23 +32,24 @@ export default function AnalyticsPage() {
   const [popularItems, setPopularItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
 
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [loadingSales, setLoadingSales] = useState(true);
+
+  // 📌 Fetch Popular Items
   useEffect(() => {
     const fetchPopularItems = async () => {
       try {
-        // 1️⃣ Replace "access_token" with whatever key you see in your localStorage
-        const token = localStorage.getItem("access_token"); 
+        const token = localStorage.getItem("access_token");
         if (!token) {
           console.error("No access token found. Please log in first.");
           setLoadingItems(false);
           return;
         }
 
-        // 2️⃣ Set headers with Bearer token
         const myHeaders = new Headers();
         myHeaders.append("Authorization", `Bearer ${token}`);
         myHeaders.append("Content-Type", "application/json");
 
-        // 3️⃣ Fetch from backend API
         const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/analytics/items`, {
           method: "GET",
           headers: myHeaders,
@@ -67,7 +58,6 @@ export default function AnalyticsPage() {
         const json = await res.json();
         console.log("Popular Items API response:", json);
 
-        // 4️⃣ Format data safely
         const itemsArray = Array.isArray(json.data) ? json.data : [];
         const formattedItems = itemsArray.map((item: any) => ({
           name: item.item_id || "Unknown",
@@ -86,11 +76,53 @@ export default function AnalyticsPage() {
     fetchPopularItems();
   }, []);
 
+  // 📌 Fetch Sales Data
+  useEffect(() => {
+    const fetchSales = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          console.error("No access token found. Please log in first.");
+          setLoadingSales(false);
+          return;
+        }
+
+        const myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${token}`);
+        myHeaders.append("Content-Type", "application/json");
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/analytics/sales`, {
+          method: "GET",
+          headers: myHeaders,
+        });
+
+        const json = await res.json();
+        console.log("Sales API response:", json);
+
+        // ✅ Backend sends object { "2025-09-28": 12000, "2025-09-29": 18000 }
+        const rawData = json.data || {};
+        const formatted = Object.entries(rawData).map(([date, amount]) => ({
+          date,
+          amount
+        }));
+
+        setSalesData(formatted);
+      } catch (err) {
+        console.error("Error fetching sales data:", err);
+        setSalesData([]);
+      } finally {
+        setLoadingSales(false);
+      }
+    };
+
+    fetchSales();
+  }, []);
+
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
       <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Analytics Dashboard</h1>
 
-      {/* KPI Cards - hardcoded */}
+      {/* KPI Cards - still hardcoded for now */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
@@ -135,21 +167,27 @@ export default function AnalyticsPage() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Trends chart - hardcoded */}
+        {/* Sales Trends chart - now dynamic */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
             <BarChart className="w-5 h-5 text-[#483AA0]" />
             Sales Trends
           </h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={salesData}>
-              <Line type="monotone" dataKey="revenue" stroke="#483AA0" strokeWidth={2} />
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-            </LineChart>
-          </ResponsiveContainer>
+          {loadingSales ? (
+            <p className="text-center">Loading sales data...</p>
+          ) : salesData.length === 0 ? (
+            <p className="text-center text-red-500">No sales data found</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={salesData}>
+                <Line type="monotone" dataKey="amount" stroke="#483AA0" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Popular Items chart - dynamic */}
@@ -185,7 +223,7 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {/* Peak Hours chart - hardcoded */}
+        {/* Peak Hours chart - still hardcoded */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 lg:col-start-1">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Peak Hours Analysis</h2>
           <ResponsiveContainer width="100%" height={250}>
