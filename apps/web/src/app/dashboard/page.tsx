@@ -308,6 +308,36 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
   );
 };
 
+
+const fetchOrders = async () => {
+  const accessToken = localStorage.getItem('access_token');
+  if (!accessToken) {
+    console.error('No access token found');
+    return;
+  }
+
+  const myHeaders = new Headers();
+  myHeaders.append("Authorization", `Bearer ${accessToken}`);
+
+  const requestOptions = {
+    method: 'GET',
+    headers: myHeaders,
+  };
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/orders`, requestOptions);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const orders = await response.json();
+    console.log(orders);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+  }
+};
+
+fetchOrders();
+
 // Modal for updating a menu item
 interface UpdateMenuItemModalProps {
   item: MenuItem;
