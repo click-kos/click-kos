@@ -74,7 +74,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isStaff = user.user_metadata?.role === "staff";
+    const {data: dbUser, error: dbUserError} = await supabase.from("user").select().eq("id", user.id).single();
+
+    if (dbUserError || !dbUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isStaff = dbUser.role === "staff" || dbUser.role === "admin";
 
     let query = supabase.from("order").select("*, order_item(*)");
 
