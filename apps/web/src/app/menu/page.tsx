@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Filter, ShoppingCart, Star, Clock, Heart, ChefHat, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import Link from "next/link"; 
+import { Search, Filter, ShoppingCart, Star, Clock, Heart, ChefHat, TrendingUp, X } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 
 const featuredItems = [
   {
@@ -113,11 +115,47 @@ const categories = [
   { id: "beverages", name: "Beverages", icon: Clock },
 ];
 
+
+
 export default function MenuPage() {
+  const [featuredItems, setFeaturedItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [cartItems, setCartItems] = useState(0);
+  const [cartItemsLocal, setCartItemsLocal] = useState(0);
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [showCartPopup, setShowCartPopup] = useState(false);
+
+  // Fetch menu items
+  useEffect(() => {
+  const loadMenu = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (selectedCategory !== "all") params.append("category", selectedCategory);
+      if (searchTerm.trim() !== "") params.append("keyword", searchTerm.trim());
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu`);
+      
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const resData = await res.json();
+      setFeaturedItems(resData.data || []);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Failed to load menu. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadMenu();
+}, [selectedCategory, searchTerm]);
+
+
 
   const toggleFavorite = (itemId: number) => {
     setFavorites((prev) =>
@@ -125,18 +163,8 @@ export default function MenuPage() {
     );
   };
 
-  const addToCart = (itemId: number) => {
-    setCartItems((prev) => prev + 1);
-  };
+  const { addToCart, cartCount, cartItems, removeFromCart } = useCart();
 
-  const filteredItems = featuredItems.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
@@ -160,9 +188,12 @@ export default function MenuPage() {
             <Filter className="w-4 h-4" />
             Filters
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#7965C1] text-white rounded-lg hover:bg-[#483AA0] transition-colors">
+          <button 
+            onClick={() => setShowCartPopup(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#7965C1] text-white rounded-lg hover:bg-[#483AA0] transition-colors"
+          >
             <ShoppingCart className="w-4 h-4" />
-            Cart ({cartItems})
+            Cart ({cartCount})
           </button>
         </div>
       </div>
@@ -196,36 +227,39 @@ export default function MenuPage() {
 
         {/* Menu Items */}
         <div className="md:col-span-3">
-          {filteredItems.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-16 text-gray-500 dark:text-gray-400">Loading menu...</div>
+          ) : error ? (
+            <div className="text-center py-16 text-red-500">{error}</div>
+          ) : featuredItems.length === 0 ? (
+            <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+              No menu items match your search.
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item) => (
+              {featuredItems.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.item_id}
                   className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   {/* Image */}
                   <div className="relative h-40 overflow-hidden">
                     <img
-                      src={item.image}
+                      src={item.item_image?.[0]?.url}
                       alt={item.name}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
-                    {item.isPopular && (
-                      <div className="absolute top-3 left-3 bg-[#483AA0] text-white px-2 py-1 rounded-full text-xs font-medium">
-                        Popular
-                      </div>
-                    )}
                     <button
-                      onClick={() => toggleFavorite(item.id)}
+                      onClick={() => toggleFavorite(item.item_id)}
                       className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
-                        favorites.includes(item.id)
+                        favorites.includes(item.item_id)
                           ? "bg-red-100 text-red-600"
                           : "bg-white/80 text-gray-600 hover:bg-white hover:text-red-600"
                       }`}
                     >
                       <Heart
                         className={`w-4 h-4 ${
-                          favorites.includes(item.id) ? "fill-current" : ""
+                          favorites.includes(item.item_id) ? "fill-current" : ""
                         }`}
                       />
                     </button>
@@ -245,19 +279,10 @@ export default function MenuPage() {
                       {item.description}
                     </p>
 
-                    <div className="flex items-center gap-4 mb-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span>{item.rating}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span>{item.cookTime}</span>
-                      </div>
-                    </div>
-
                     <button
-                      onClick={() => addToCart(item.id)}
+
+                      onClick={() => addToCart(item)}
+
                       className="w-full bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white py-2 px-4 rounded-lg hover:from-[#0E2148] hover:to-[#483AA0] transition-all duration-300 font-medium"
                     >
                       Add to Cart
@@ -266,16 +291,84 @@ export default function MenuPage() {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-              <p className="text-lg">No menu items match your search.</p>
-            </div>
           )}
         </div>
       </div>
+
+      {/* Cart Popup */}
+      {showCartPopup && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => setShowCartPopup(false)}
+          />
+          
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white">Your Cart</h2>
+                <button
+                  onClick={() => setShowCartPopup(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+
+              {/* Cart Content */}
+              <div className="p-4 max-h-96 overflow-y-auto">
+                {cartItems.length === 0 ? (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">🛒 Your cart is empty.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {cartItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center gap-3 bg-gray-50 dark:bg-gray-700"
+                      >
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-medium text-[#0E2148] dark:text-white">{item.name}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">R{item.price}</p>
+                        </div>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-500 hover:text-red-700 text-sm px-2 py-1 border border-red-300 rounded hover:bg-red-50 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              {cartItems.length > 0 && (
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-[#0E2148] dark:text-white">Total:</span>
+                    <span className="font-bold text-[#483AA0]">
+                      R{cartItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <button className="w-full bg-[#7965C1] hover:bg-[#5d4fa8] text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+                    Checkout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
-
-
 

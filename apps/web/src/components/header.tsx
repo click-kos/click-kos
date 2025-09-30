@@ -10,7 +10,9 @@ import {
   getUserData,
   clearAuth,
   type UserData,
+
   isAuthenticated,
+
 } from "../lib/auth";
 import { Button } from "./ui/button";
 
@@ -38,6 +40,16 @@ const tabs: Tab[] = [
   { id: "admin", label: "Admin", href: "/admin" },
 ];
 
+
+// Default user data
+const defaultUser: UserData = {
+  name: "Thuso Ndou",
+  email: "37853058@mynwu.ac.za",
+  role: "Student",
+};
+
+
+
 export default function Header() {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -49,10 +61,23 @@ export default function Header() {
   // Check authentication status and user data on component mount and when localStorage changes
   useEffect(() => {
     const checkAuthStatus = () => {
+
+      const authStatus = getAuthStatus();
+      const user = getUserData();
+
+      if (authStatus && user) {
+        setIsLoggedIn(true);
+        setUserData(user);
+      } else {
+        setIsLoggedIn(false);
+        setUserData(defaultUser);
+      }
+
       const authenticated = isAuthenticated();
       const userData = getUserData();
       setIsLoggedIn(authenticated);
       setUserData(userData);
+
     };
 
     // Check immediately
@@ -122,7 +147,7 @@ export default function Header() {
   }, []);
 
   return (
-    <div>
+    <div className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 z-50">
       <div className="flex flex-row items-center justify-between px-4 py-3">
         {/* Logo/Brand Area */}
         <div className="flex items-center">
@@ -155,10 +180,12 @@ export default function Header() {
               className="fixed lg:hidden top-0 left-0 w-full h-full bg-black/50 z-10"
             ></div>
           )}
+
+
           <nav
             className={`${
               mobileNavOpen ? "flex" : "hidden"
-            } lg:flex flex-col lg:w-fit w-72 z-50 bottom-0 h-screen lg:h-fit right-0 left-0 absolute lg:relative lg:flex-row space-x-1 bg-white dark:bg-gray-800 lg:bg-gray-100 dark:lg:bg-gray-800 p-4 lg:p-1 lg:rounded-lg border lg:border-0 border-gray-200 dark:border-gray-700`}
+            } lg:flex flex-col lg:w-fit w-72 z-50 top-0 h-screen lg:h-fit right-0 left-0 absolute lg:relative lg:flex-row space-x-1 bg-white dark:bg-gray-800 lg:bg-gray-100 dark:lg:bg-gray-800 p-4 lg:p-1 lg:rounded-lg border lg:border-0 border-gray-200 dark:border-gray-700`}
           >
             {mobileNavOpen && (
               <div className="flex justify-between items-center lg:hidden mb-4">
@@ -173,6 +200,7 @@ export default function Header() {
                   onClick={toggleMobileNav}
                 >
                   <X className="w-5 h-5" />
+
                 </Button>
               </div>
             )}

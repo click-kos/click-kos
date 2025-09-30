@@ -36,6 +36,7 @@ export async function GET(request: Request) {
   // Optional keyword search (case-insensitive)
   if (searchParams.get("keyword")) {
     query = query.ilike("name", `%${searchParams.get("keyword")}%`);
+
   }
 
   const { data, error } = await query;
@@ -43,14 +44,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+
   return NextResponse.json(
     { message: "Menu items fetched successfully", data },
     { status: 200 }
   );
+
 }
 
 // POST /api/menu
 export async function POST(request: Request) {
+
+
   const supabase = await createClient();
   const body = await request.json();
   const { name, price, description, available, category, imageUrl } = body;
@@ -88,6 +93,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     { message: "Menu item added successfully", data: { ...itemData, image: imageRecord } },
+
     { status: 201 }
   );
 }
