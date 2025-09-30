@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
   const body = await request.json();
-  const { name, price, description, available, category, imageUrl } = body;
+  const { name, price, description, available, category, imageUrl, image } = body;
 
   const validationErrors = validateMenuItem(body);
   if (validationErrors) {
