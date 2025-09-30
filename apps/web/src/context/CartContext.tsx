@@ -2,39 +2,39 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 
 export interface cartItem {
-    id: number;
-    name: string;
-    description: string;
-    price: number;
-    rating: number;
-    cookTime: string;
-    category: string;
-    isPopular: boolean;
-    image: string;
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  rating: number;
+  cookTime: string;
+  category: string;
+  isPopular: boolean;
+  image: string;
 }
 
 interface CartContextType {
-    cartItems: cartItem[];
-    addToCart: (item: cartItem) => void;
-    removeFromCart: (id: number) => void;
-    cartCount: number;
-    
+  cartItems: cartItem[];
+  addToCart: (item: cartItem) => void;
+  removeFromCart: (id: number) => void;
+  cartCount: number;
 }
 
-const CartContext =createContext<CartContextType | undefined>(undefined);
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const useCart =(): CartContextType => {
-    const context = useContext(CartContext);
-    if(!context) {
-        throw new Error ("useCart must be used within a CartProvider")
-    }
-    return context;
-}; 
+export const useCart = (): CartContextType => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
+  return context;
+};
 
 interface cartProviderProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 export const CartProvider: React.FC<cartProviderProps> = ({ children }) => {
@@ -42,27 +42,37 @@ export const CartProvider: React.FC<cartProviderProps> = ({ children }) => {
   const [cartCount, setCartCount] = useState<number>(0);
 
   const addToCart = (item: cartItem) => {
-    setCartItems(prev => [...prev,item]);
-    setCartCount(prev => prev + 1);
-}
-
-const removeFromCart =(id: number) => {
-    setCartItems(prev => {
-        const newItems = [...prev];
-        const index = newItems.findIndex(item => item.id === id);
-        if (index !== -1) {
-            newItems.splice(index, 1);
-        }
-        return newItems;
+    setCartItems((prev) => [...prev, item]);
+    setCartCount((prev) => prev + 1);
+    toast(`${item.name} added to cart`, {
+      description: item.description,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          removeFromCart(item.id);
+        },
+      },
     });
-    setCartCount(prev => (prev > 0 ? prev - 1 : 0));
-}
+  };
 
-return (
-    <CartContext.Provider value = {{cartItems, addToCart, removeFromCart, cartCount}}>
-        {children}
+  const removeFromCart = (id: number) => {
+    setCartItems((prev) => {
+      const newItems = [...prev];
+      const index = newItems.findIndex((item) => item.id === id);
+      if (index !== -1) {
+        newItems.splice(index, 1);
+      }
+      return newItems;
+    });
+    setCartCount((prev) => (prev > 0 ? prev - 1 : 0));
+    toast(`Item removed from cart`);
+  };
+
+  return (
+    <CartContext.Provider
+      value={{ cartItems, addToCart, removeFromCart, cartCount }}
+    >
+      {children}
     </CartContext.Provider>
-);
-
+  );
 };
-
