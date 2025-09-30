@@ -3,14 +3,15 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
+  const { id } = await context.params;
 
   const { data, error } = await supabase
     .from("payment")
     .select("payment_id, order_id, amount, status, method")
-    .eq("payment_id", params.id)
+    .eq("payment_id", id)
     .single();
 
   if (error) {
