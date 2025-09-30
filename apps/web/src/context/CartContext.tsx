@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 
 export interface cartItem {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number;
@@ -19,7 +19,8 @@ export interface cartItem {
 interface CartContextType {
   cartItems: cartItem[];
   addToCart: (item: cartItem) => void;
-  removeFromCart: (id: number) => void;
+  removeFromCart: (id: string) => void;
+  clearCart: () => void;
   cartCount: number;
 }
 
@@ -55,7 +56,7 @@ export const CartProvider: React.FC<cartProviderProps> = ({ children }) => {
     });
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setCartItems((prev) => {
       const newItems = [...prev];
       const index = newItems.findIndex((item) => item.id === id);
@@ -68,9 +69,15 @@ export const CartProvider: React.FC<cartProviderProps> = ({ children }) => {
     toast(`Item removed from cart`);
   };
 
+  const clearCart = () => {
+    setCartItems([]);
+    setCartCount(0);
+    toast('Cart cleared');
+  };
+
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, cartCount }}
+      value={{ cartItems, addToCart, removeFromCart, clearCart, cartCount }}
     >
       {children}
     </CartContext.Provider>

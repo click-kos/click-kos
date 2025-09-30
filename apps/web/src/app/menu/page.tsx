@@ -14,6 +14,8 @@ import {
   X,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { processCheckout } from "@/lib/checkout";
+import { toCartItem } from "@/lib/cart";
 
 const featuredItems = [
   {
@@ -187,7 +189,15 @@ export default function MenuPage() {
     );
   };
 
-  const { addToCart, cartCount, cartItems, removeFromCart } = useCart();
+  const { addToCart, cartCount, cartItems, removeFromCart, clearCart } = useCart();
+
+  const handleCheckout = async () => {
+    await processCheckout({
+      cartItems,
+      clearCart,
+      onSuccess: () => setShowCartPopup(false),
+    });
+  };
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
@@ -309,7 +319,7 @@ export default function MenuPage() {
                     </p>
 
                     <button
-                      onClick={() => addToCart(item)}
+                      onClick={() => addToCart(toCartItem(item))}
                       className="w-full bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white py-2 px-4 rounded-lg hover:from-[#0E2148] hover:to-[#483AA0] transition-all duration-300 font-medium"
                     >
                       Add to Cart
@@ -355,9 +365,9 @@ export default function MenuPage() {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {cartItems.map((item) => (
+                    {cartItems.map((item, index) => (
                       <div
-                        key={item.id}
+                        key={`${item.id}-${index}`}
                         className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center gap-3 bg-gray-50 dark:bg-gray-700"
                       >
                         <img
@@ -399,7 +409,10 @@ export default function MenuPage() {
                         .toFixed(2)}
                     </span>
                   </div>
-                  <button className="w-full bg-[#7965C1] hover:bg-[#5d4fa8] text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+                  <button
+                    onClick={handleCheckout}
+                    className="w-full bg-[#7965C1] hover:bg-[#5d4fa8] text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+                  >
                     Checkout
                   </button>
                 </div>

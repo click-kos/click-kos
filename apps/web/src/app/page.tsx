@@ -5,7 +5,8 @@ import { Search, ShoppingCart, Star, Clock, TrendingUp, ChefHat, Heart, Filter, 
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useCart } from '@/context/CartContext';
-import { id } from "zod/locales";
+import { toCartItem } from '@/lib/cart';
+import { processCheckout } from '@/lib/checkout';
 
 const categories = [
   { id: "all", name: "All Items", icon: ChefHat },
@@ -60,7 +61,14 @@ export default function Home() {
     );
   };
 
-  const { addToCart, cartCount, cartItems: cartContextItems, removeFromCart } = useCart();
+  const { addToCart, cartCount, cartItems: cartContextItems, removeFromCart, clearCart } = useCart();
+
+  const handleCheckout = async () => {
+    await processCheckout({
+      cartItems: cartContextItems,
+      clearCart,
+    });
+  };
 
 
   const filteredItems = featuredItems;
@@ -220,8 +228,7 @@ export default function Home() {
                 {/* Add to Cart Button */}
                 
                 <button
-                  
-                  onClick={() => addToCart(item)}
+                  onClick={() => addToCart(toCartItem(item))}
                   className="w-full bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white py-2 px-4 rounded-lg hover:from-[#0E2148] hover:to-[#483AA0] transition-all duration-300 font-medium"
                 >
                   Add to Cart
@@ -366,7 +373,7 @@ export default function Home() {
                       R{cartContextItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
                     </span>
                   </div>
-                  <button className="w-full bg-[#7965C1] hover:bg-[#5d4fa8] text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+                  <button onClick={handleCheckout} className="w-full bg-[#7965C1] hover:bg-[#5d4fa8] text-white font-semibold py-2 px-4 rounded-md transition duration-200">
                     Checkout
                   </button>
                 </div>
