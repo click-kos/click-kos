@@ -1,13 +1,13 @@
 // app/api/analytics/sales/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, getAuthorization } from "@/utils/supabase/server";
 
 export async function GET(req: Request) {
   try {
     const supabase = await createClient();
 
     // ✅ Auth check
-    const { data: { user } } = await supabase.auth.getUser();
+    const {user, error: authError} = await getAuthorization(req, supabase);
     if (!user) {
       return NextResponse.json({ status: "401", message: "Unauthorized" }, { status: 401 });
     }
@@ -24,8 +24,8 @@ export async function GET(req: Request) {
 
     // ✅ Fetch orders (aggregate sales by date)
     const { data, error } = await supabase
-      .from("orders")
-      .select("order_date, total_amount");
+      .from("order")
+      .select("ordered_at, total_amount");
 
     if (error) {
       return NextResponse.json({ status: "500", message: error.message }, { status: 500 });
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     // Group sales by date
     const grouped: Record<string, number> = {};
     data.forEach(order => {
-      const date = order.order_date.split("T")[0];
+      const date = order.ordered_at.split("T")[0];
       grouped[date] = (grouped[date] || 0) + order.total_amount;
     });
 

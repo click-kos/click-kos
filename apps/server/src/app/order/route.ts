@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, getAuthorization } from "@/utils/supabase/server";
 
 //POST: insert order + items + notification
 export async function POST(req: NextRequest) {
@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
     }
 
     // get user from session
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {user, error: userError} = await getAuthorization(req, supabase);
+
     if (userError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -63,11 +64,12 @@ export async function POST(req: NextRequest) {
 }
 
 // GET: staff sees new orders, user sees their own
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {user, error: userError} = await getAuthorization(req, supabase);
+
     if (userError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

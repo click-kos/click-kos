@@ -1,7 +1,7 @@
-import { createClient } from "@/utils/supabase/server";
+import { createClient, getAuthorization } from "@/utils/supabase/server";
 import { NextResponse, NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
 
   //this is how you will be working on the apis
   //this one just creates a user based on a given email  and returns the user data
@@ -9,21 +9,13 @@ export async function GET(request: NextRequest) {
   //always initiate supabase client at the start of the function
   const supabase = await createClient();
 
-  //get the email from the request if available, otherwise generate a random email
-  const email = request.nextUrl.searchParams.get("email") || Math.random().toString(36).substring(2, 15) + "@example.com";
+  const {user, error} = await getAuthorization(request, supabase);
 
-  //then perform the operation you want
-  const {data: user, error} = await supabase.auth.signUp({
-    email: email,
-    password: "password",
-  });
+  console.log(user);
 
-  //then return the response
-  //make sure to handle errors properly
-  if (!error) {
-    return NextResponse.json({ message: "User signed up successfully", user }, { status: 200 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
-  else{
-    return NextResponse.json({ message: "Error signing up", error }, { status: 500 });
-  }
+
+  return NextResponse.json({ user });
 }
