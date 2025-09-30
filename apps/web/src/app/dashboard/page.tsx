@@ -76,7 +76,9 @@ const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => {
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-xl font-semibold text-[#0E2148] dark:text-white">{title}</h3>
+          <h3 className="text-xl font-semibold text-[#0E2148] dark:text-white">
+            {title}
+          </h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -99,10 +101,20 @@ interface MenuItemFormProps {
   isSubmitting: boolean;
 }
 
-const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialData, onSubmit, isSubmitting }) => {
-  const [formData, setFormData] = useState<Partial<MenuItem> & { imageUrl?: string; imageFile?: File }>(
+const MenuItemForm: React.FC<MenuItemFormProps> = ({
+  initialData,
+  onSubmit,
+  isSubmitting,
+}) => {
+  const [formData, setFormData] = useState<
+    Partial<MenuItem> & { imageUrl?: string; imageFile?: File }
+  >(
     initialData
-      ? { ...initialData, imageUrl: initialData.item_image?.[0]?.url || "", imageFile: undefined }
+      ? {
+          ...initialData,
+          imageUrl: initialData.item_image?.[0]?.url || "",
+          imageFile: undefined,
+        }
       : {
           name: "",
           price: 0,
@@ -118,9 +130,21 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialData, onSubmit, isSu
     setFormData((prev) => ({ ...prev, imageFile: e.target.files?.[0] }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value, type } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: type === "number" ? parseFloat(value) : type === "checkbox" ? (e.target as HTMLInputElement).checked : value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        type === "number"
+          ? parseFloat(value)
+          : type === "checkbox"
+          ? (e.target as HTMLInputElement).checked
+          : value,
+    }));
   };
 
   const handleToggle = (name: keyof MenuItem) => {
@@ -136,41 +160,148 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialData, onSubmit, isSu
     <form onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="item_id" value={formData.item_id || ""} />
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-        <input id="name" name="name" type="text" required value={formData.name || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Name
+        </label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          value={formData.name || ""}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]"
+        />
       </div>
       <div>
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price (R)</label>
-        <input id="price" name="price" type="number" step="0.01" required min="0" value={formData.price || 0} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+        <label
+          htmlFor="price"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Price (R)
+        </label>
+        <input
+          id="price"
+          name="price"
+          type="number"
+          step="0.01"
+          required
+          min="0"
+          value={formData.price || 0}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]"
+        />
       </div>
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-        <textarea id="description" name="description" rows={3} required value={formData.description || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" ></textarea>
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Description
+        </label>
+        <textarea
+          id="description"
+          name="description"
+          rows={3}
+          required
+          value={formData.description || ""}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]"
+        ></textarea>
       </div>
       <div>
-        <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-        <input id="category" name="category" type="text" required value={formData.category || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+        <label
+          htmlFor="category"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Category
+        </label>
+        <input
+          id="category"
+          name="category"
+          type="text"
+          required
+          value={formData.category || ""}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]"
+        />
       </div>
       <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-        <label htmlFor="available" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+        <label
+          htmlFor="available"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+        >
           <Tag className="w-4 h-4 text-[#483AA0]" />
           Available for Order
         </label>
-        <button type="button" onClick={() => handleToggle("available")} className={`relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#483AA0] ${formData.available ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-600'}`} role="switch" aria-checked={formData.available}>
-          <span aria-hidden="true" className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200 ${formData.available ? 'translate-x-5' : 'translate-x-0'}`}></span>
+        <button
+          type="button"
+          onClick={() => handleToggle("available")}
+          className={`relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#483AA0] ${
+            formData.available ? "bg-green-600" : "bg-gray-200 dark:bg-gray-600"
+          }`}
+          role="switch"
+          aria-checked={formData.available}
+        >
+          <span
+            aria-hidden="true"
+            className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200 ${
+              formData.available ? "translate-x-5" : "translate-x-0"
+            }`}
+          ></span>
         </button>
       </div>
       <div>
-        <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300"> Image </label>
-        <input id="image" name="image" type="file" accept="image/*" onChange={handleImageChange} className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#483AA0] file:text-white hover:file:bg-[#3d3184]" />
+        <label
+          htmlFor="image"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          {" "}
+          Image{" "}
+        </label>
+        <input
+          id="image"
+          name="image"
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#483AA0] file:text-white hover:file:bg-[#3d3184]"
+        />
       </div>
       <div>
-        <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Image URL (Optional)</label>
-        <input id="imageUrl" name="imageUrl" type="url" value={formData.imageUrl || ""} onChange={handleChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]" />
+        <label
+          htmlFor="imageUrl"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Image URL (Optional)
+        </label>
+        <input
+          id="imageUrl"
+          name="imageUrl"
+          type="url"
+          value={formData.imageUrl || ""}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 dark:bg-gray-700 dark:border-gray-600 focus:ring-[#483AA0] focus:border-[#483AA0]"
+        />
       </div>
       <div className="flex justify-end pt-4 border-t dark:border-gray-700">
-        <button type="submit" disabled={isSubmitting} className={`px-4 py-2 rounded-full font-semibold text-white transition-colors ${isSubmitting ? "bg-[#483AA0]/60 cursor-not-allowed" : "bg-[#483AA0] hover:bg-[#3d3184]"}`}>
-          {isSubmitting ? "Saving..." : initialData ? "Update Item" : "Add Item"}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`px-4 py-2 rounded-full font-semibold text-white transition-colors ${
+            isSubmitting
+              ? "bg-[#483AA0]/60 cursor-not-allowed"
+              : "bg-[#483AA0] hover:bg-[#3d3184]"
+          }`}
+        >
+          {isSubmitting
+            ? "Saving..."
+            : initialData
+            ? "Update Item"
+            : "Add Item"}
         </button>
       </div>
     </form>
@@ -185,14 +316,23 @@ interface UpdateMenuItemModalProps {
   isSubmitting: boolean;
 }
 
-const UpdateMenuItemModal: React.FC<UpdateMenuItemModalProps> = ({ item, onClose, onUpdate, isSubmitting }) => {
+const UpdateMenuItemModal: React.FC<UpdateMenuItemModalProps> = ({
+  item,
+  onClose,
+  onUpdate,
+  isSubmitting,
+}) => {
   const handleSubmit = (data: Partial<MenuItem> & { imageUrl?: string }) => {
     onUpdate(data);
   };
 
   return (
     <Modal title={`Update Menu Item: ${item.name}`} onClose={onClose}>
-      <MenuItemForm initialData={item} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+      <MenuItemForm
+        initialData={item}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
     </Modal>
   );
 };
@@ -204,7 +344,11 @@ interface AddMenuItemModalProps {
   isSubmitting: boolean;
 }
 
-const AddMenuItemModal: React.FC<AddMenuItemModalProps> = ({ onClose, onAdd, isSubmitting }) => {
+const AddMenuItemModal: React.FC<AddMenuItemModalProps> = ({
+  onClose,
+  onAdd,
+  isSubmitting,
+}) => {
   const handleSubmit = (data: Partial<MenuItem> & { imageUrl?: string }) => {
     onAdd(data);
   };
@@ -227,18 +371,22 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onUpdateClick }) => {
     <div className="flex bg-gray-50 dark:bg-gray-700 rounded-lg shadow-md overflow-hidden transition-shadow hover:shadow-lg">
       {/* Invisible Item ID for staff */}
       <span className="sr-only">Item ID: {item.item_id}</span>
-      
+
       {/* Image Section */}
       <div className="w-24 h-24 flex-shrink-0">
         {item.item_image && item.item_image.length > 0 ? (
-          <img src={item.item_image?.[0]?.url} alt={item.name} className="w-full h-full object-cover" />
+          <img
+            src={item.item_image?.[0]?.url}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <div className="w-full h-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400">
             <Image className="w-8 h-8" />
           </div>
         )}
       </div>
-      
+
       {/* Details Section */}
       <div className="p-3 flex-grow flex flex-col justify-between">
         <h3 className="text-lg font-semibold text-[#0E2148] dark:text-white truncate">
@@ -252,16 +400,18 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onUpdateClick }) => {
             <span className="text-base font-bold text-green-600 dark:text-green-400">
               R{item.price.toFixed(2)}
             </span>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-              item.available 
-                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-            }`}>
-              {item.available ? 'Available' : 'Unavailable'}
+            <span
+              className={`text-xs font-medium px-2 py-0.5 rounded ${
+                item.available
+                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+              }`}
+            >
+              {item.available ? "Available" : "Unavailable"}
             </span>
           </div>
-          <button 
-            onClick={() => onUpdateClick(item)} 
+          <button
+            onClick={() => onUpdateClick(item)}
             className="px-3 py-1 text-sm rounded-full bg-[#483AA0] text-white hover:bg-[#3d3184] transition-colors shadow-md"
           >
             Update
@@ -269,13 +419,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onUpdateClick }) => {
         </div>
       </div>
     </div>
-  );
+  );
 };
-
-
-
-
-
 
 // Menu Management Component
 const MenuManagement: React.FC = () => {
@@ -289,27 +434,29 @@ const MenuManagement: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Mock API Call (Replace with actual fetch logic)
-  
-const fetchMenuItems = useCallback(async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    if (!process.env.NEXT_PUBLIC_SERVER_URL) {
-      throw new Error("NEXT_PUBLIC_SERVER_URL is not defined.");
+
+  const fetchMenuItems = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (!process.env.NEXT_PUBLIC_SERVER_URL) {
+        throw new Error("NEXT_PUBLIC_SERVER_URL is not defined.");
+      }
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/menu`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch menu items.");
+      }
+      const result = await response.json();
+      console.log("API Response:", result);
+      setMenuItems(result.data);
+    } catch (err: any) {
+      setError(err.message || "An unknown error occurred while fetching menu.");
+    } finally {
+      setLoading(false);
     }
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch menu items.");
-    }
-    const result = await response.json();
-    console.log("API Response:", result);
-    setMenuItems(result.data);
-  } catch (err: any) {
-    setError(err.message || "An unknown error occurred while fetching menu.");
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  }, []);
 
   useEffect(() => {
     fetchMenuItems();
@@ -344,10 +491,12 @@ const fetchMenuItems = useCallback(async () => {
     try {
       // MOCK API logic
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
-      
+
       const isNew = method === "POST";
-      const newItemId = isNew ? `MI-${Math.floor(Math.random() * 1000) + 100}` : data.item_id;
-      
+      const newItemId = isNew
+        ? `MI-${Math.floor(Math.random() * 1000) + 100}`
+        : data.item_id;
+
       const newOrUpdatedItem: MenuItem = {
         item_id: newItemId!,
         name: data.name || "",
@@ -363,7 +512,9 @@ const fetchMenuItems = useCallback(async () => {
         setSuccessMessage("Menu item added successfully!");
       } else {
         setMenuItems((prev) =>
-          prev.map((item) => (item.item_id === newItemId ? newOrUpdatedItem : item))
+          prev.map((item) =>
+            item.item_id === newItemId ? newOrUpdatedItem : item
+          )
         );
         setSuccessMessage("Menu item updated successfully!");
       }
@@ -386,7 +537,6 @@ const fetchMenuItems = useCallback(async () => {
 
       setSelectedItem(null);
       setIsAddModalOpen(false);
-
     } catch (err: any) {
       setError(err.message || "Failed to complete action.");
     } finally {
@@ -395,102 +545,118 @@ const fetchMenuItems = useCallback(async () => {
     }
   };
 
-  const handleUpdateSubmit = async (data: Partial<MenuItem> & { imageUrl?: string; imageFile?: File }) => {
-  if (!selectedItem) return;
+  const handleUpdateSubmit = async (
+    data: Partial<MenuItem> & { imageUrl?: string; imageFile?: File }
+  ) => {
+    if (!selectedItem) return;
 
-  try {
-    let imageUrl = data.imageUrl;
-    if (data.imageFile) {
-      const formData = new FormData();
-      formData.append('file', data.imageFile);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${selectedItem.item_id}/images`, {
-        method: 'POST',
-        body: formData,
-      });
+    try {
+      let imageUrl = data.imageUrl;
+      if (data.imageFile) {
+        const formData = new FormData();
+        formData.append("file", data.imageFile);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${selectedItem.item_id}/images`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to upload image");
+        }
+        const imageData = await response.json();
+        imageUrl = imageData.url;
+      }
+
+      const updatedData = {
+        name: data.name,
+        price: data.price,
+        description: data.description,
+        available: data.available,
+        category: data.category,
+        imageUrl,
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${selectedItem.item_id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedData),
+        }
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error("Failed to update menu item");
       }
-      const imageData = await response.json();
-      imageUrl = imageData.url;
+
+      setSuccessMessage("Menu item updated successfully!");
+      fetchMenuItems();
+      setSelectedItem(null);
+    } catch (error: any) {
+      setError(error.message || "Failed to update menu item");
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    const updatedData = {
-      name: data.name,
-      price: data.price,
-      description: data.description,
-      available: data.available,
-      category: data.category,
-      imageUrl,
-    };
+  const handleAddSubmit = async (
+    data: Partial<MenuItem> & { imageUrl?: string; imageFile?: File }
+  ) => {
+    try {
+      // Create a new menu item without an image
+      const newData = {
+        name: data.name,
+        price: data.price,
+        description: data.description,
+        available: data.available,
+        category: data.category,
+      };
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${selectedItem.item_id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedData),
-    });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/menu`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newData),
+        }
+      );
 
-    if (!response.ok) {
-      throw new Error('Failed to update menu item');
-    }
-
-    setSuccessMessage('Menu item updated successfully!');
-    fetchMenuItems();
-    setSelectedItem(null);
-  } catch (error: any) {
-    setError(error.message || 'Failed to update menu item');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-  const handleAddSubmit = async (data: Partial<MenuItem> & { imageUrl?: string; imageFile?: File }) => {
-  try {
-    // Create a new menu item without an image
-    const newData = {
-      name: data.name,
-      price: data.price,
-      description: data.description,
-      available: data.available,
-      category: data.category,
-    };
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newData),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to add menu item');
-    }
-
-    const menuItemData = await response.json();
-    const menuItemId = menuItemData.data.item_id;
-
-    // Upload the image
-    if (data.imageFile) {
-      const formData = new FormData();
-      formData.append('file', data.imageFile, data.imageFile.name); // Add the file name
-      const imageResponse = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${menuItemId}/images`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!imageResponse.ok) {
-        const errorData = await imageResponse.json();
-        throw new Error(errorData.error || 'Failed to upload image');
+      if (!response.ok) {
+        throw new Error("Failed to add menu item");
       }
-    }
 
-    setSuccessMessage('Menu item added successfully!');
-    fetchMenuItems();
-    setIsAddModalOpen(false);
-  } catch (error: any) {
-    setError(error.message || 'Failed to add menu item');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      const menuItemData = await response.json();
+      const menuItemId = menuItemData.data.item_id;
+
+      // Upload the image
+      if (data.imageFile) {
+        const formData = new FormData();
+        formData.append("file", data.imageFile, data.imageFile.name); // Add the file name
+        const imageResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/menu/${menuItemId}/images`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!imageResponse.ok) {
+          const errorData = await imageResponse.json();
+          throw new Error(errorData.error || "Failed to upload image");
+        }
+      }
+
+      setSuccessMessage("Menu item added successfully!");
+      fetchMenuItems();
+      setIsAddModalOpen(false);
+    } catch (error: any) {
+      setError(error.message || "Failed to add menu item");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -521,7 +687,7 @@ const fetchMenuItems = useCallback(async () => {
           Add New Item
         </button>
       </div>
-      
+
       {/* Messages */}
       {error && (
         <div className="p-3 mb-4 bg-red-100 dark:bg-red-900 border border-red-400 rounded text-red-800 dark:text-red-200 flex items-center">
@@ -548,7 +714,11 @@ const fetchMenuItems = useCallback(async () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredMenuItems.map((item) => (
-            <MenuItemCard key={item.item_id} item={item} onUpdateClick={handleUpdateClick} />
+            <MenuItemCard
+              key={item.item_id}
+              item={item}
+              onUpdateClick={handleUpdateClick}
+            />
           ))}
         </div>
       )}
@@ -573,9 +743,12 @@ const fetchMenuItems = useCallback(async () => {
   );
 };
 
-
 // The main StaffDashboard component - updated to include MenuManagement
-const DashboardSection: React.FC<{title: string; icon: ReactNode; children: ReactNode}> = ({ title, icon, children }) => (
+const DashboardSection: React.FC<{
+  title: string;
+  icon: ReactNode;
+  children: ReactNode;
+}> = ({ title, icon, children }) => (
   <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
     <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
       {icon}
@@ -588,7 +761,9 @@ const DashboardSection: React.FC<{title: string; icon: ReactNode; children: Reac
 const StaffDashboard: React.FC = () => {
   return (
     <div>
-      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Staff Dashboard</h1>
+      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">
+        Staff Dashboard
+      </h1>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <OrderQueue />
@@ -623,10 +798,9 @@ const StaffDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       {/* New Menu Management Section */}
       <MenuManagement />
-      
     </div>
   );
 };
@@ -816,9 +990,14 @@ const OrderQueue: React.FC = () => {
       </div>
 
       {selectedOrder && (
-        <Modal title={`Order Details: ${selectedOrder.id}`} onClose={closeModal}>
+        <Modal
+          title={`Order Details: ${selectedOrder.id}`}
+          onClose={closeModal}
+        >
           <div className="space-y-4 text-gray-700 dark:text-gray-300">
-            <p className="text-lg font-medium">Customer: {selectedOrder.customer}</p>
+            <p className="text-lg font-medium">
+              Customer: {selectedOrder.customer}
+            </p>
             <div>
               <h4 className="text-md font-semibold mb-2">Items:</h4>
               <ul className="list-disc list-inside space-y-1">
@@ -837,7 +1016,10 @@ const OrderQueue: React.FC = () => {
                   <span>
                     R
                     {selectedOrder.items
-                      .reduce((acc, item) => acc + item.quantity * item.price, 0)
+                      .reduce(
+                        (acc, item) => acc + item.quantity * item.price,
+                        0
+                      )
                       .toFixed(2)}
                   </span>
                 </div>
@@ -852,7 +1034,8 @@ const OrderQueue: React.FC = () => {
             <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
               <p>Placed: {selectedOrder.time}</p>
               <p>
-                Status: <span className="font-semibold">{selectedOrder.status}</span>
+                Status:{" "}
+                <span className="font-semibold">{selectedOrder.status}</span>
               </p>
             </div>
           </div>
@@ -862,7 +1045,6 @@ const OrderQueue: React.FC = () => {
   );
 };
 
-
 // FeedbackModal component for students to leave feedback
 interface FeedbackModalProps {
   order: Order;
@@ -870,7 +1052,11 @@ interface FeedbackModalProps {
   onSubmit: (rating: number, comment: string) => void;
 }
 
-const FeedbackModal: React.FC<FeedbackModalProps> = ({ order, onClose, onSubmit }) => {
+const FeedbackModal: React.FC<FeedbackModalProps> = ({
+  order,
+  onClose,
+  onSubmit,
+}) => {
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
 
@@ -878,13 +1064,12 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ order, onClose, onSubmit 
     setRating(newRating);
   };
 
-
-const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  // Add your logic here to handle the form submission
-  // For example, you can call the onSubmit prop and pass the rating and comment
-  onSubmit(rating, comment);
-};
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Add your logic here to handle the form submission
+    // For example, you can call the onSubmit prop and pass the rating and comment
+    onSubmit(rating, comment);
+  };
 
   return (
     <Modal title={`Leave Feedback for Order ${order.id}`} onClose={onClose}>
@@ -1048,7 +1233,9 @@ const StudentDashboard: React.FC = () => {
               onClick={() => (window.location.href = "/menu")}
               className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#483AA0] transition-colors text-center"
             >
-              <span className="text-lg text-gray-600 dark:text-gray-400">Go to Menu</span>
+              <span className="text-lg text-gray-600 dark:text-gray-400">
+                Go to Menu
+              </span>
             </button>
           </div>
         </div>
@@ -1088,7 +1275,10 @@ const StudentDashboard: React.FC = () => {
             </div>
           ) : (
             orders
-              .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+              .sort(
+                (a, b) =>
+                  new Date(b.time).getTime() - new Date(a.time).getTime()
+              )
               .map((order) => (
                 <div
                   key={order.id}
@@ -1131,7 +1321,9 @@ const StudentDashboard: React.FC = () => {
                         className="flex items-center gap-1 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                       >
                         <MessageSquare className="w-4 h-4" />
-                        <span className="text-xs hidden md:inline">Leave Feedback</span>
+                        <span className="text-xs hidden md:inline">
+                          Leave Feedback
+                        </span>
                       </button>
                     )}
                     {order.status === "Completed" && order.feedback && (
@@ -1146,7 +1338,9 @@ const StudentDashboard: React.FC = () => {
                         aria-label="Refresh status"
                       >
                         <RotateCcw className="w-4 h-4" />
-                        <span className="text-xs hidden md:inline">Refresh</span>
+                        <span className="text-xs hidden md:inline">
+                          Refresh
+                        </span>
                       </button>
                     )}
                   </div>
@@ -1156,9 +1350,14 @@ const StudentDashboard: React.FC = () => {
         </div>
       </div>
       {selectedOrder && (
-        <Modal title={`Order Details: ${selectedOrder.id}`} onClose={closeModal}>
+        <Modal
+          title={`Order Details: ${selectedOrder.id}`}
+          onClose={closeModal}
+        >
           <div className="space-y-4 text-gray-700 dark:text-gray-300">
-            <p className="text-lg font-medium">Customer: {selectedOrder.customer}</p>
+            <p className="text-lg font-medium">
+              Customer: {selectedOrder.customer}
+            </p>
             <div>
               <h4 className="text-md font-semibold mb-2">Items:</h4>
               <ul className="list-disc list-inside space-y-1">
@@ -1177,7 +1376,10 @@ const StudentDashboard: React.FC = () => {
                   <span>
                     R
                     {selectedOrder.items
-                      .reduce((acc, item) => acc + item.quantity * item.price, 0)
+                      .reduce(
+                        (acc, item) => acc + item.quantity * item.price,
+                        0
+                      )
                       .toFixed(2)}
                   </span>
                 </div>
@@ -1187,7 +1389,9 @@ const StudentDashboard: React.FC = () => {
               <p>Placed: {selectedOrder.time}</p>
               <p>
                 Status:{" "}
-                <span className="font-semibold capitalize">{selectedOrder.status}</span>
+                <span className="font-semibold capitalize">
+                  {selectedOrder.status}
+                </span>
               </p>
             </div>
           </div>
@@ -1206,7 +1410,9 @@ const StudentDashboard: React.FC = () => {
 
 // The main component that switches between dashboards.
 export default function DashboardSwitcher() {
-  const [activeDashboard, setActiveDashboard] = useState<"staff" | "student">("staff");
+  const [activeDashboard, setActiveDashboard] = useState<"staff" | "student">(
+    "staff"
+  );
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
