@@ -28,3 +28,17 @@ export async function createClient() {
   )
 }
 
+export async function getAuthorization(request: Request, supabase: any){
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) return { error: "No token provided", user: null };
+
+  const token = authHeader.split(" ")[1]; // Bearer <token>
+
+  // Verify token using Supabase
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+
+  if (error) return { error, user: null };
+
+  return { error: null, user };
+}
+

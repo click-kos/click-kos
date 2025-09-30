@@ -1,6 +1,6 @@
 // app/api/analytics/reports/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, getAuthorization } from "@/utils/supabase/server";
 import PDFDocument from "pdfkit";
 import getStream from "get-stream";
 
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
     const supabase = await createClient();
 
     // ✅ Auth check
-    const { data: { user } } = await supabase.auth.getUser();
+    const {user, error} = await getAuthorization(req, supabase);
     if (!user) {
       return NextResponse.json({ status: "401", message: "Unauthorized" }, { status: 401 });
     }
@@ -40,6 +40,6 @@ export async function GET(req: Request) {
       data: { file: base64 }
     });
   } catch (err) {
-    return NextResponse.json({ status: "500", message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ status: "500", message: "Internal Server Error", error: err }, { status: 500 });
   }
 }

@@ -1,13 +1,13 @@
 // app/api/analytics/staff/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, getAuthorization } from "@/utils/supabase/server";
 
 export async function GET(req: Request) {
   try {
     const supabase = await createClient();
 
     // ✅ Auth check
-    const { data: { user } } = await supabase.auth.getUser();
+    const {user} = await getAuthorization(req, supabase);
     if (!user) {
       return NextResponse.json({ status: "401", message: "Unauthorized" }, { status: 401 });
     }

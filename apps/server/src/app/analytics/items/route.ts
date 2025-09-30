@@ -1,13 +1,13 @@
 // app/api/analytics/items/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, getAuthorization } from "@/utils/supabase/server";
 
 export async function GET(req: Request) {
   try {
     const supabase = await createClient();
 
-    // ✅ Auth check
-    const { data: { user } } = await supabase.auth.getUser();
+    const {user, error: authError} = await getAuthorization(req, supabase);
+
     if (!user) {
       return NextResponse.json({ status: "401", message: "Unauthorized" }, { status: 401 });
     }
@@ -24,8 +24,8 @@ export async function GET(req: Request) {
 
     // ✅ Query: count items ordered (popularity)
     const { data, error } = await supabase
-      .from("order_items")
-      .select("item_id");
+      .from("order_item")
+      .select("menu_item_id, menu_item(*)");
 
     if (error) {
       return NextResponse.json({ status: "500", message: error.message }, { status: 500 });
@@ -34,13 +34,13 @@ export async function GET(req: Request) {
     // Count popularity
     const counts: Record<string, number> = {};
     data.forEach(item => {
-      counts[item.item_id] = (counts[item.item_id] || 0) + 1;
+      counts[item.menu_item_id] = (counts[item.menu_item_id] || 0) + 1;
     });
 
     // Sort by popularity
     const sorted = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
-      .map(([item_id, count]) => ({ item_id, count }));
+      .map(([menu_item_id, count]) => ({ menu_item_id, count }));
 
     return NextResponse.json({
       status: "200",
