@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
 // details with items
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: any) {
   const supabase = await createClient();
 
   try {
@@ -21,7 +21,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 }
 
 //update status + notify user
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: any) {
   const supabase = await createClient();
 
   try {
@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /orders/:id -> cancel only if pending
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: any) {
   const supabase = await createClient();
 
   try {

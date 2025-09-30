@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any 
 ) {
   const supabase = await createClient();
   const id = params.id;
