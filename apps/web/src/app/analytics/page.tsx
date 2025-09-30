@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart, PieChart, TrendingUp, DollarSign, Users, Package } from "lucide-react";
+import { BarChart, PieChart, DollarSign, Users, Package, TrendingUp } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -18,7 +18,7 @@ import {
   Legend
 } from "recharts";
 
-// Hardcoded/mock data for testing other charts
+// Hardcoded data for testing other charts
 const salesData = [
   { name: "Mon", revenue: 6000 },
   { name: "Tue", revenue: 7500 },
@@ -43,33 +43,31 @@ export default function AnalyticsPage() {
   const [loadingItems, setLoadingItems] = useState(true);
 
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetchPopularItems = async () => {
       try {
-        // ✅ Get the token from localStorage or your auth provider
-        const token = localStorage.getItem("accessToken");
+        // 1️⃣ Replace "access_token" with whatever key you see in your localStorage
+        const token = localStorage.getItem("access_token"); 
         if (!token) {
-          console.error("No authentication token found");
-          setPopularItems([]);
+          console.error("No access token found. Please log in first.");
           setLoadingItems(false);
           return;
         }
 
+        // 2️⃣ Set headers with Bearer token
+        const myHeaders = new Headers();
+        myHeaders.append("Authorization", `Bearer ${token}`);
+        myHeaders.append("Content-Type", "application/json");
+
+        // 3️⃣ Fetch from backend API
         const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/analytics/items`, {
           method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
+          headers: myHeaders,
         });
-
-        if (!res.ok) {
-          throw new Error(`HTTP error! Status: ${res.status}`);
-        }
 
         const json = await res.json();
         console.log("Popular Items API response:", json);
 
-        // Safe mapping
+        // 4️⃣ Format data safely
         const itemsArray = Array.isArray(json.data) ? json.data : [];
         const formattedItems = itemsArray.map((item: any) => ({
           name: item.item_id || "Unknown",
@@ -77,22 +75,22 @@ export default function AnalyticsPage() {
         }));
 
         setPopularItems(formattedItems);
-        setLoadingItems(false);
       } catch (err) {
         console.error("Error fetching popular items:", err);
         setPopularItems([]);
+      } finally {
         setLoadingItems(false);
       }
     };
 
-    fetchItems();
+    fetchPopularItems();
   }, []);
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
       <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Analytics Dashboard</h1>
 
-      {/* KPI Cards - keep hardcoded for now */}
+      {/* KPI Cards - hardcoded */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
@@ -154,7 +152,7 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Popular Items chart - dynamic from API */}
+        {/* Popular Items chart - dynamic */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
             <PieChart className="w-5 h-5 text-[#7965C1]" />
