@@ -20,10 +20,10 @@ export async function POST(req: NextRequest) {
     }
 
     // calculate subtotals + total (casting to any[])
+    // Schema: order_item(menu_item_id, order_id, quantity, subtotal)
     const orderItems = (items as any[]).map((i) => ({
-      product_id: i.product_id,
+      menu_item_id: i.product_id ?? i.menu_item_id,
       quantity: i.quantity,
-      price: i.price,
       subtotal: i.price * i.quantity,
     }));
 
@@ -41,10 +41,10 @@ export async function POST(req: NextRequest) {
 
     if (orderError) throw orderError;
 
-    // insert items
+    // insert items (no price column in order_item)
     const withOrderId = orderItems.map((i) => ({
       ...i,
-      order_id: order.id,
+      order_id: (order as any).id ?? (order as any).order_id,
     }));
 
     const { error: itemsError } = await supabase.from("order_item").insert(withOrderId);
@@ -74,7 +74,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isStaff = user.user_metadata?.role === "staff";
+    const {data: dbUser, error: dbUserError} = await supabase.from("user").select().eq("id", user.id).single();
+
+    if (dbUserError || !dbUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isStaff = dbUser.role === "staff" || dbUser.role === "admin";
 
     let query = supabase.from("order").select("*, order_item(*)");
 

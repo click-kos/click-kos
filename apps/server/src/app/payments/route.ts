@@ -11,6 +11,19 @@ export async function POST(req: NextRequest) {
     const { order_id, amount, email } = await req.json();
     const supabase = await createClient();
 
+    // Ensure we have a valid absolute URL with scheme for Stripe redirects
+    // Prefer APP_URL, but fall back to request origin if unset/invalid
+    const fallbackOrigin = req.nextUrl.origin; // e.g., http://localhost:3000
+    const configuredWebUrl =
+      process.env.WEB_APP_URL ||
+      process.env.NEXT_PUBLIC_WEB_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL;
+    let appUrl = fallbackOrigin;
+    if (configuredWebUrl && /^(http|https):\/\//i.test(configuredWebUrl)) {
+      appUrl = configuredWebUrl;
+    }
+
     // Insert payment row
     const { data: payment, error } = await supabase
       .from("payment")
@@ -27,24 +40,44 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
+    // Build itemized line items from order items
+    const { data: items, error: itemsError } = await supabase
+      .from("order_item")
+      .select("quantity, subtotal, menu_item:menu_item_id(name, price, item_image(url))")
+      .eq("order_id", order_id);
+
+    if (itemsError) throw itemsError;
+
+    const line_items = (items || []).map((it: any) => ({
+      price_data: {
+        currency: "zar",
+        product_data: {
+          name: it.menu_item?.name ?? "Item",
+          images: it.menu_item?.item_image?.[0]?.url ? [it.menu_item.item_image[0].url] : undefined,
+        },
+        unit_amount: Math.round((it.menu_item?.price ?? (it.subtotal / Math.max(1, it.quantity))) * 100),
+      },
+      quantity: it.quantity,
+    }));
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       customer_email: email,
-      line_items: [
+      line_items: line_items.length > 0 ? line_items : [
         {
           price_data: {
-            currency: "zar", //South African Rand
+            currency: "zar",
             product_data: { name: `Order ${order_id}` },
-            unit_amount: Math.round(amount * 100), // cents
+            unit_amount: Math.round(amount * 100),
           },
           quantity: 1,
         },
       ],
       mode: "payment",
       //Include payment_id in success URL for frontend lookup
-      success_url: `${process.env.APP_URL}/payments/success?payment_id=${payment.payment_id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL}/payments/cancel`,
+      success_url: `${appUrl}/payments/success?payment_id=${payment.payment_id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/payments/cancel`,
       metadata: { payment_id: payment.payment_id, order_id },
     });
 

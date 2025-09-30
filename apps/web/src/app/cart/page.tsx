@@ -1,11 +1,19 @@
 'use client';
 
 import React from 'react';
-import { useCart } from '@/context/CartContext'; 
+import { useCart } from '@/context/CartContext';
+import { processCheckout } from '@/lib/checkout';
 
 function CartPage() {
-  const { cartItems, removeFromCart } = useCart(); 
+  const { cartItems, removeFromCart, clearCart } = useCart();
   const total = cartItems.reduce((sum, item) => sum + item.price, 0);
+
+  const handleCheckout = async () => {
+    await processCheckout({
+      cartItems,
+      clearCart,
+    });
+  };
 
   return (
   <>
@@ -56,7 +64,10 @@ function CartPage() {
           <div className="text-base sm:text-lg font-semibold mb-2 sm:mb-0">
             Total: <span className="text-black">R{total}</span>
           </div>
-          <button className="bg-[#7965C1] hover:bg-[#5d4fa8] text-white text-sm sm:text-base font-semibold py-2 px-6 rounded-md transition duration-200">
+          <button 
+            onClick={handleCheckout}
+            className="bg-[#7965C1] hover:bg-[#5d4fa8] text-white text-sm sm:text-base font-semibold py-2 px-6 rounded-md transition duration-200"
+          >
             Checkout
           </button>
         </div>
