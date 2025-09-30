@@ -160,7 +160,8 @@ export default function MenuPage() {
           params.append("keyword", searchTerm.trim());
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SERVER_URL}/menu?` + params.toString()
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/menu?available=true&` +
+            params.toString()
         );
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
