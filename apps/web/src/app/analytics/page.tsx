@@ -18,6 +18,7 @@ import {
   Legend
 } from "recharts";
 
+// Peak Hours mock data
 const peakHours = [
   { hour: "9AM", orders: 20 },
   { hour: "12PM", orders: 200 },
@@ -34,6 +35,8 @@ export default function AnalyticsPage() {
 
   const [salesData, setSalesData] = useState<any[]>([]);
   const [loadingSales, setLoadingSales] = useState(true);
+
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   // 📌 Fetch Popular Items
   useEffect(() => {
@@ -60,7 +63,7 @@ export default function AnalyticsPage() {
 
         const itemsArray = Array.isArray(json.data) ? json.data : [];
         const formattedItems = itemsArray.map((item: any) => ({
-          name: item.item_id || "Unknown",
+          name: item.name || "Unknown",
           value: item.count || 0
         }));
 
@@ -99,7 +102,6 @@ export default function AnalyticsPage() {
         const json = await res.json();
         console.log("Sales API response:", json);
 
-        // ✅ Backend sends object { "2025-09-28": 12000, "2025-09-29": 18000 }
         const rawData = json.data || {};
         const formatted = Object.entries(rawData).map(([date, amount]) => ({
           date,
@@ -118,22 +120,33 @@ export default function AnalyticsPage() {
     fetchSales();
   }, []);
 
+  // 📌 Calculate Total Revenue whenever salesData updates
+  useEffect(() => {
+    if (salesData.length > 0) {
+      const sum = salesData.reduce((acc, curr) => acc + Number(curr.amount), 0);
+      setTotalRevenue(Math.round(sum)); // remove decimals
+    }
+  }, [salesData]);
+
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
       <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Analytics Dashboard</h1>
 
-      {/* KPI Cards - still hardcoded for now */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">R24,580</p>
+              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">
+                {totalRevenue.toLocaleString("en-ZA", { style: "currency", currency: "ZAR", minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
             <DollarSign className="w-8 h-8 text-[#483AA0]" />
           </div>
         </div>
 
+        {/* Keep other KPI cards hardcoded for now */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -167,7 +180,7 @@ export default function AnalyticsPage() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Trends chart - now dynamic */}
+        {/* Sales Trends chart */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
             <BarChart className="w-5 h-5 text-[#483AA0]" />
@@ -190,13 +203,12 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {/* Popular Items chart - dynamic */}
+        {/* Popular Items chart */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
             <PieChart className="w-5 h-5 text-[#7965C1]" />
             Popular Items
           </h2>
-
           {loadingItems ? (
             <p className="text-center">Loading popular items...</p>
           ) : popularItems.length === 0 ? (
@@ -210,20 +222,19 @@ export default function AnalyticsPage() {
                   nameKey="name"
                   outerRadius={90}
                   fill="#483AA0"
-                  label
                 >
                   {popularItems.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend />
+                <Legend verticalAlign="middle" layout="vertical" align="right" />
               </RePieChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* Peak Hours chart - still hardcoded */}
+        {/* Peak Hours chart */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 lg:col-start-1">
           <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Peak Hours Analysis</h2>
           <ResponsiveContainer width="100%" height={250}>
