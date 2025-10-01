@@ -24,7 +24,10 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from("menu_item")
-    .select(`*, item_image(url)`); // join image table
+    .select(`
+      *,
+      item_image(url)
+    `);
 
   // Optional filters
   if (searchParams.get("available")) {
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
 
 
   return NextResponse.json(
-    { message: "Menu items fetched successfully", data },
+    { message: "Menu items fetched successfully from menu ", data },
     { status: 200 }
   );
 
