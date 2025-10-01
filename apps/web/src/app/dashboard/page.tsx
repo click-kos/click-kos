@@ -325,7 +325,7 @@ const fetchOrders = async () => {
   };
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/orders`, requestOptions);
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, requestOptions);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
