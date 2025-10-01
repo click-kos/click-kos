@@ -4,6 +4,8 @@ import { createClient, getAuthorization } from "@/utils/supabase/server";
 import PDFDocument from "pdfkit";
 
 
+
+
 export async function GET(req: Request) {
   try {
     const supabase = await createClient();
