@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Clock, CheckCircle, XCircle, RefreshCcw } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { useRouter } from "next/navigation";
 import { getAccessToken, getUserData } from "../../lib/auth";
 
 type OrderItem = {
@@ -22,6 +24,8 @@ export default function OrdersPage() {
   const [currentOrders, setCurrentOrders] = useState<OrderItem[]>([]);
   const [pastOrders, setPastOrders] = useState<OrderItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { addToCart, clearCart } = useCart();
+  const router = useRouter();
 
   // Load orders on mount
   useEffect(() => {
@@ -91,7 +95,7 @@ export default function OrdersPage() {
           setCurrentOrders(orders);
           setPastOrders([]);
         } else {
-          // Student response: { currentOrders, pastOrders } -> expand "item" string into items list
+          // Student response: { currentOrders, pastOrders } expand "item" string into items list
           const mapSimple = (o: any): OrderItem => {
             const itemStr = (o.item ?? '').toString();
             const names = itemStr.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
@@ -119,46 +123,27 @@ export default function OrdersPage() {
     loadOrders();
   }, []);
 
-  // Reorder function
+  // Reorder: rebuild cart from order and navigate to cart (checkout)
   const reorder = async (order: OrderItem) => {
     try {
-      const items = order.items.map((i) => ({
-        menu_item_id: i.menu_item_id,
-        quantity: i.quantity,
-        price: i.price,
-      }));
-
-      const token = getAccessToken();
-      if (!token) {
-        setError('No authentication token found');
-        return;
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ items }),
+      clearCart();
+      order.items.forEach((i) => {
+        const quantity = Math.max(1, i.quantity || 1);
+        for (let k = 0; k < quantity; k++) {
+          addToCart({
+            id: i.menu_item_id,
+            name: i.name || "Item",
+            description: "",
+            price: i.price ?? 0,
+            rating: 0,
+            cookTime: "",
+            category: "",
+            isPopular: false,
+            image: "",
+          });
+        }
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        setCurrentOrders((prev) => [
-          ...prev,
-          {
-            id: data.order.id,
-            items: order.items,
-            total_amount: order.total_amount,
-            status: "pending",
-            eta: "20 min",
-            date: new Date().toISOString().split("T")[0],
-          },
-        ]);
-      } else {
-        alert(data.error);
-      }
+      router.push("/?checkout=1");
     } catch (err) {
       console.error(err);
     }

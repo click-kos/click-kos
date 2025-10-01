@@ -26,6 +26,18 @@ export default function Home() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showCartPopup, setShowCartPopup] = useState(false);
 
+  // Auto-open cart popup if ?checkout=1 is present
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('checkout') === '1') {
+        setShowCartPopup(true);
+        url.searchParams.delete('checkout');
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+      }
+    } catch {}
+  }, []);
+
   // Fetch menu items
   useEffect(() => {
     const loadMenu = async () => {
