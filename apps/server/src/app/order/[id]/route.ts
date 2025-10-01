@@ -23,9 +23,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data: dbUser } = await supabase
       .from("user")
       .select("role")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
-    const isStaff = dbUser?.role === "staff" || dbUser?.role === "admin";
+    const roleValue = (dbUser?.role || '').toString().toLowerCase();
+    const isStaff = roleValue === "staff" || roleValue === "admin";
     if (!isStaff && order.user_id !== user.id)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -54,9 +55,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const { data: dbUser } = await supabase
       .from("user")
       .select("role")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
-    const isStaff = dbUser?.role === "staff" || dbUser?.role === "admin";
+    const roleValue = (dbUser?.role || '').toString().toLowerCase();
+    const isStaff = roleValue === "staff" || roleValue === "admin";
     if (!isStaff)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

@@ -9,13 +9,21 @@ export async function GET(req: NextRequest) {
     if (userError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get user role
-    const { data: dbUser, error: dbUserError } = await supabase.from("user").select("role").eq("id", user.id).single();
+    const { data: dbUser, error: dbUserError } = await supabase
+      .from("user")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
     if (dbUserError || !dbUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const isStaff = dbUser.role === "staff" || dbUser.role === "admin";
+    const roleValue = (dbUser.role || '').toString().toLowerCase();
+    const isStaff = roleValue === "staff" || roleValue === "admin";
 
     // Build query
-    let query = supabase.from("order").select("*, order_item(*)").order("created_at", { ascending: false });
+    let query = supabase
+      .from("order")
+      .select("*, order_item(*, menu_item(name, price))")
+      .order("ordered_at", { ascending: false });
 
     if (isStaff) {
       query = query.eq("status", "pending"); // staff sees only new orders
@@ -28,16 +36,19 @@ export async function GET(req: NextRequest) {
 
     if (!isStaff) {
       // Split orders for frontend: current vs past
-      const currentOrders = orders.filter(o => o.status !== "Delivered" && o.status !== "Cancelled");
-      const pastOrders = orders.filter(o => o.status === "Delivered" || o.status === "Cancelled");
+      const currentOrders = orders.filter((o: any) => o.status !== "Delivered" && o.status !== "Cancelled");
+      const pastOrders = orders.filter((o: any) => o.status === "Delivered" || o.status === "Cancelled");
 
       const mapOrder = (o: any) => ({
         id: o.id,
-        item: o.order_item.map((i: any) => i.name).join(", "),
-        price: o.order_item.reduce((sum: number, i: any) => sum + i.subtotal, 0),
+        item: (o.order_item ?? [])
+          .map((i: any) => i?.name ?? i?.menu_item?.name ?? "")
+          .filter((n: string) => n && n.trim().length > 0)
+          .join(', '),
+        price: (o.order_item ?? []).reduce((sum: number, i: any) => sum + (i?.subtotal ?? 0), 0),
         status: o.status,
         eta: o.eta,
-        date: o.created_at,
+        date: o.ordered_at,
       });
 
       return NextResponse.json({
@@ -79,8 +90,9 @@ export async function POST(req: NextRequest) {
       .single();
     if (orderError) throw orderError;
 
-    // Insert order items
-    const withOrderId = orderItems.map((i: any) => ({ ...i, order_id: order.id }));
+    // Insert order items (support schemas where PK is order_id instead of id)
+    const newOrderId = (order as any).order_id ?? (order as any).id;
+    const withOrderId = orderItems.map((i: any) => ({ ...i, order_id: newOrderId }));
     const { error: itemsError } = await supabase.from("order_item").insert(withOrderId);
     if (itemsError) throw itemsError;
 
@@ -91,7 +103,9 @@ export async function POST(req: NextRequest) {
       is_read: false,
     });
 
-    return NextResponse.json({ order, orderItems: withOrderId });
+    // Normalize response to always include id
+    const normalizedOrder = { id: newOrderId, ...order };
+    return NextResponse.json({ order: normalizedOrder, orderItems: withOrderId });
   } catch (err: any) {
     console.error("Create order error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
