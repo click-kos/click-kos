@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
     if (status === "paid" || status === "no_payment_required") {
       await supabase.from("payment").update({ status: "success" }).eq("payment_id", metaPaymentId);
       if (metaOrderId) {
-        await supabase.from("order").update({ status: "paid" }).eq("id", metaOrderId).eq("status", "pending");
+        await supabase
+          .from("order")
+          .update({ status: "paid" })
+          .or(`id.eq.${metaOrderId},order_id.eq.${metaOrderId}`)
+          .eq("status", "pending");
       }
       return NextResponse.json({ status: "success" });
     }
@@ -49,7 +53,10 @@ export async function POST(req: NextRequest) {
     if (status === "unpaid") {
       await supabase.from("payment").update({ status: "failed" }).eq("payment_id", metaPaymentId);
       if (metaOrderId) {
-        await supabase.from("order").update({ status: "unpaid" }).eq("id", metaOrderId);
+        await supabase
+          .from("order")
+          .update({ status: "unpaid" })
+          .or(`id.eq.${metaOrderId},order_id.eq.${metaOrderId}`);
       }
       return NextResponse.json({ status: "failed" });
     }

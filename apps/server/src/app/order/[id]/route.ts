@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, getAuthorization } from "@/utils/supabase/server";
 
 // GET /orders/:id -> get order details with items
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
 
   try {
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if (userError || !user)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { data: order, error } = await supabase
       .from("order")
       .select("*, order_item(*)")
@@ -23,9 +23,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data: dbUser } = await supabase
       .from("user")
       .select("role")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
-    const isStaff = dbUser?.role === "staff" || dbUser?.role === "admin";
+    const roleValue = (dbUser?.role || '').toString().toLowerCase();
+    const isStaff = roleValue === "staff" || roleValue === "admin";
     if (!isStaff && order.user_id !== user.id)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PUT /orders/:id -> update status + notify user
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
 
   try {
@@ -45,7 +46,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (userError || !user)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
     if (!status)
@@ -54,9 +55,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const { data: dbUser } = await supabase
       .from("user")
       .select("role")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
-    const isStaff = dbUser?.role === "staff" || dbUser?.role === "admin";
+    const roleValue = (dbUser?.role || '').toString().toLowerCase();
+    const isStaff = roleValue === "staff" || roleValue === "admin";
     if (!isStaff)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
