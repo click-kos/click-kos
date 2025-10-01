@@ -1,21 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, getAuthorization } from "@/utils/supabase/server";
 
+// GET /orders/:id -> get order details with items
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient();
 
   try {
     const { user, error: userError } = await getAuthorization(req, supabase);
-    if (userError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (userError || !user)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = params;
-    const { data: order, error } = await supabase.from("order").select("*, order_item(*)").eq("id", id).single();
-    if (error || !order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    const { data: order, error } = await supabase
+      .from("order")
+      .select("*, order_item(*)")
+      .eq("id", id)
+      .single();
+    if (error || !order)
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
     // Ensure user owns the order or is staff/admin
-    const { data: dbUser } = await supabase.from("user").select("role").eq("id", user.id).single();
+    const { data: dbUser } = await supabase
+      .from("user")
+      .select("role")
+      .eq("id", user.id)
+      .single();
     const isStaff = dbUser?.role === "staff" || dbUser?.role === "admin";
-    if (!isStaff && order.user_id !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isStaff && order.user_id !== user.id)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     return NextResponse.json({ order });
   } catch (err: any) {
@@ -24,23 +36,36 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
+// PUT /orders/:id -> update status + notify user
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient();
 
   try {
     const { user, error: userError } = await getAuthorization(req, supabase);
-    if (userError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (userError || !user)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = params;
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
-    if (!status) return NextResponse.json({ error: "Status required" }, { status: 400 });
+    if (!status)
+      return NextResponse.json({ error: "Status required" }, { status: 400 });
 
-    const { data: dbUser } = await supabase.from("user").select("role").eq("id", user.id).single();
+    const { data: dbUser } = await supabase
+      .from("user")
+      .select("role")
+      .eq("id", user.id)
+      .single();
     const isStaff = dbUser?.role === "staff" || dbUser?.role === "admin";
-    if (!isStaff) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isStaff)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const { data: order, error } = await supabase.from("order").update({ status }).eq("id", id).select().single();
+    const { data: order, error } = await supabase
+      .from("order")
+      .update({ status })
+      .eq("id", id)
+      .select()
+      .single();
     if (error) throw error;
 
     // Notify user
@@ -56,5 +81,3 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
-

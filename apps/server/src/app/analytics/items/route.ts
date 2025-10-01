@@ -32,15 +32,25 @@ export async function GET(req: Request) {
     }
 
     // Count popularity
-    const counts: Record<string, number> = {};
-    data.forEach(item => {
-      counts[item.menu_item_id] = (counts[item.menu_item_id] || 0) + 1;
+    const popularity: Record<string, { count: number; item: any }> = {};
+    data.forEach(orderItem => {
+      const itemId = orderItem.menu_item_id;
+      if (!popularity[itemId]) {
+        popularity[itemId] = {
+          count: 0,
+          item: orderItem.menu_item,
+        };
+      }
+      popularity[itemId].count += 1;
     });
 
     // Sort by popularity
-    const sorted = Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([menu_item_id, count]) => ({ menu_item_id, count }));
+    const sorted = Object.values(popularity)
+      .sort((a, b) => b.count - a.count)
+      .map(data => ({
+        ...data.item,
+        count: data.count,
+      }));
 
     return NextResponse.json({
       status: "200",
