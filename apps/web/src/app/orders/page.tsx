@@ -3,77 +3,80 @@
 import { useState } from "react";
 import { Clock, CheckCircle, XCircle, RefreshCcw } from "lucide-react";
 
-const currentOrders = [
-  {
-    id: "ORD12345",
-    item: "Bunny Chow",
-    price: 45.0,
-    status: "Preparing",
-    eta: "15 min",
-    date: "2025-09-05",
-  },
-  {
-    id: "ORD12346",
-    item: "Boerewors Roll",
-    price: 32.0,
-    status: "Out for Delivery",
-    eta: "5 min",
-    date: "2025-09-05",
-  },
-];
-
-const pastOrders = [
-  {
-    id: "ORD12340",
-    item: "Gatsby",
-    price: 58.0,
-    status: "Delivered",
-    date: "2025-09-01",
-  },
-  {
-    id: "ORD12341",
-    item: "Bobotie",
-    price: 52.0,
-    status: "Delivered",
-    date: "2025-08-29",
-  },
-];
+type OrderItem = {
+  id: string;
+  items: {
+    menu_item_id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }[];
+  status: string;
+  eta?: string;
+  date: string;
+  total_amount: number;
+};
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState(currentOrders);
-  const [history, setHistory] = useState(pastOrders);
+  const [currentOrders, setCurrentOrders] = useState<OrderItem[]>([]);
+  const [pastOrders, setPastOrders] = useState<OrderItem[]>([]);
 
-  const cancelOrder = (id: string) => {
-  setOrders((prev) => {
-    const orderToCancel = prev.find((order) => order.id === id);
-    if (!orderToCancel) return prev; // safety check
+  // Reorder function
+  const reorder = async (order: OrderItem) => {
+    try {
+      const items = order.items.map((i) => ({
+        menu_item_id: i.menu_item_id,
+        quantity: i.quantity,
+        price: i.price,
+      }));
 
-      // Push it into history as cancelled
-      setHistory((historyPrev) => [
-        {
-          ...orderToCancel,
-          status: "Cancelled",
-          date: new Date().toISOString().split("T")[0],
+      const res = await fetch("/api/order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        ...historyPrev,
-      ]);
+        body: JSON.stringify({ items }),
+      });
 
-      // Remove it from current orders
-      return prev.filter((order) => order.id !== id);
-    });
+      const data = await res.json();
+      if (res.ok) {
+        setCurrentOrders((prev) => [
+          ...prev,
+          {
+            id: data.order.id,
+            items: order.items,
+            total_amount: order.total_amount,
+            status: "pending",
+            eta: "20 min",
+            date: new Date().toISOString().split("T")[0],
+          },
+        ]);
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-
-  const reorder = (order: typeof pastOrders[0]) => {
-    setOrders((prev) => [
-      ...prev,
-      { ...order, id: "ORD" + Math.floor(Math.random() * 100000), status: "Preparing", eta: "20 min" },
-    ]);
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "Preparing":
+        return <Clock className="text-yellow-500" size={20} />;
+      case "Completed":
+        return <CheckCircle className="text-green-500" size={20} />;
+      case "Cancelled":
+        return <XCircle className="text-red-500" size={20} />;
+      default:
+        return <Clock className="text-gray-500" size={20} />;
+    }
   };
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-6">
-      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">My Orders</h1>
+      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">
+        My Orders
+      </h1>
 
       <div className="grid gap-6">
         {/* Current Orders */}
@@ -82,28 +85,27 @@ export default function OrdersPage() {
             <Clock className="w-5 h-5 text-[#483AA0]" />
             Current Orders
           </h2>
-          {orders.length > 0 ? (
+          {currentOrders.length > 0 ? (
             <div className="space-y-4">
-              {orders.map((order) => (
+              {currentOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-700"
+                  className="flex flex-col p-4 border rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 dark:border-gray-700"
                 >
-                  <div>
-                    <p className="font-semibold text-[#0E2148] dark:text-white">{order.item}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Status: <span className="font-medium">{order.status}</span> • ETA: {order.eta}
-                    </p>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-semibold text-[#0E2148] dark:text-white">
+                        {order.items.map((i) => `${i.name} x${i.quantity}`).join(", ")}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">ID: {order.id}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Date: {order.date}</p>
+                    </div>
+                    <span className="font-bold text-[#483AA0]">R{order.total_amount.toFixed(2)}</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-[#483AA0]">R{order.price.toFixed(2)}</span>
-                    <button
-                      onClick={() => cancelOrder(order.id)}
-                      className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Cancel
-                    </button>
+                  <div className="flex items-center space-x-2">
+                    {getStatusIcon(order.status)}
+                    <span className="capitalize">{order.status}</span>
+                    {order.eta && <span className="text-sm text-gray-400">• ETA: {order.eta}</span>}
                   </div>
                 </div>
               ))}
@@ -115,33 +117,40 @@ export default function OrdersPage() {
           )}
         </section>
 
-        {/* Order History */}
+        {/* Past Orders */}
         <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-[#7965C1]" />
             Order History
           </h2>
-          {history.length > 0 ? (
+          {pastOrders.length > 0 ? (
             <div className="space-y-4">
-              {history.map((order) => (
+              {pastOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-700"
+                  className="flex flex-col p-4 border rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 dark:border-gray-700"
                 >
-                  <div>
-                    <p className="font-semibold text-[#0E2148] dark:text-white">{order.item}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {order.status} • {order.date}
-                    </p>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-semibold text-[#0E2148] dark:text-white">
+                        {order.items.map((i) => `${i.name} x${i.quantity}`).join(", ")}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">ID: {order.id}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Date: {order.date}</p>
+                    </div>
+                    <span className="font-bold text-[#483AA0]">R{order.total_amount.toFixed(2)}</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-[#483AA0]">R{order.price.toFixed(2)}</span>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(order.status)}
+                      <span className="capitalize">{order.status}</span>
+                    </div>
                     <button
                       onClick={() => reorder(order)}
-                      className="flex items-center gap-1 px-3 py-1 bg-[#483AA0] text-white rounded-lg hover:bg-[#0E2148] transition"
+                      className="flex items-center space-x-1 text-sm text-purple-600 hover:underline"
                     >
-                      <RefreshCcw className="w-4 h-4" />
-                      Reorder
+                      <RefreshCcw size={16} />
+                      <span>Reorder</span>
                     </button>
                   </div>
                 </div>
@@ -157,5 +166,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-
-
