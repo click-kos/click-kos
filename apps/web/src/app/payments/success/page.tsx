@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
-function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
 
   const paymentId = searchParams.get("payment_id");
@@ -110,23 +110,19 @@ function PaymentSuccessPage() {
     };
   }, [paymentId]);
 
-  // Show spinner while polling/initial load
   if (loading || isPolling) {
     return (
-      <Suspense fallback={<div>Loading...</div>}>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7965C1] mx-auto mb-4"></div>
-            <p className="text-gray-600">Processing your payment...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7965C1] mx-auto mb-4"></div>
+          <p className="text-gray-600">Processing your payment...</p>
         </div>
-      </Suspense>
+      </div>
     );
   }
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
           {paymentStatus === "success" ? (
             <>
@@ -182,8 +178,13 @@ function PaymentSuccessPage() {
           )}
         </div>
       </div>
-    </Suspense>
   );
 }
 
-export default PaymentSuccessPage;
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PaymentSuccessContent />
+    </Suspense>
+  );
+}
