@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
 
     if (!isStaff) {
       // Split orders for frontend: current vs past
-      const currentOrders = orders.filter((o: any) => o.status !== "Delivered" && o.status !== "Cancelled");
-      const pastOrders = orders.filter((o: any) => o.status === "Delivered" || o.status === "Cancelled");
+      const currentOrders = orders.filter((o: any) => o.status !== "completed" && o.status !== "cancelled");
+      const pastOrders = orders.filter((o: any) => o.status === "completed" || o.status === "cancelled");
 
       const mapOrder = (o: any) => ({
         id: o.id,

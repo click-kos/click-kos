@@ -76,69 +76,41 @@ export default function OrdersPage() {
           return;
         }
 
-        if (role === "staff" || role === "admin") {
-          // Server returns { orders } with order_item nested
-          const orders = (data?.orders ?? []).map((o: any) => {
-            const items = (o.order_item ?? []).map((i: any) => ({
-              menu_item_id: i.menu_item_id,
-              name: i.name ?? i?.menu_item?.name ?? String(i.menu_item_id),
-              quantity: i.quantity,
-              price: i.subtotal / Math.max(1, i.quantity),
-            }));
-            const total_amount = (o.order_item ?? []).reduce(
-              (sum: number, i: any) => sum + (i.subtotal ?? 0),
-              0
-            );
-            return {
-              id: o.id,
-              items,
-              total_amount,
-              status: o.status ?? "pending",
-              eta: o.eta ?? undefined,
-              date: (o.ordered_at ?? o.created_at)?.split?.("T")?.[0] ?? "",
-            } as OrderItem;
-          });
-          // For staff view, show all as current orders
-          setCurrentOrders(orders);
-          setPastOrders([]);
-        } else {
-          // Student response: { currentOrders, pastOrders } expand "item" string into items list
-          const mapSimple = (o: any): OrderItem => {
-            const itemStr = (o.item ?? "").toString();
-            const names = itemStr
-              .split(",")
-              .map((s: string) => s.trim())
-              .filter((s: string) => s.length > 0);
-            const items =
-              names.length > 0
-                ? names.map((name: string) => ({
+        // Student response: { currentOrders, pastOrders } expand "item" string into items list
+        const mapSimple = (o: any): OrderItem => {
+          const itemStr = (o.item ?? "").toString();
+          const names = itemStr
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter((s: string) => s.length > 0);
+          const items =
+            names.length > 0
+              ? names.map((name: string) => ({
+                  menu_item_id: "",
+                  name,
+                  quantity: 1,
+                  price: 0,
+                }))
+              : [
+                  {
                     menu_item_id: "",
-                    name,
+                    name: "Order",
                     quantity: 1,
-                    price: 0,
-                  }))
-                : [
-                    {
-                      menu_item_id: "",
-                      name: "Order",
-                      quantity: 1,
-                      price: Number(o.price ?? 0),
-                    },
-                  ];
-            return {
-              id: o.id,
-              items,
-              total_amount: Number(o.price ?? 0),
-              status: o.status ?? "pending",
-              eta: o.eta ?? undefined,
-              date:
-                (o.date ?? o.created_at ?? "").toString().split("T")[0] ?? "",
-            } as OrderItem;
-          };
+                    price: Number(o.price ?? 0),
+                  },
+                ];
+          return {
+            id: o.id,
+            items,
+            total_amount: Number(o.price ?? 0),
+            status: o.status ?? "pending",
+            eta: o.eta ?? undefined,
+            date: (o.date ?? o.created_at ?? "").toString().split("T")[0] ?? "",
+          } as OrderItem;
+        };
 
-          setCurrentOrders((data?.currentOrders ?? []).map(mapSimple));
-          setPastOrders((data?.pastOrders ?? []).map(mapSimple));
-        }
+        setCurrentOrders((data?.currentOrders ?? []).map(mapSimple));
+        setPastOrders((data?.pastOrders ?? []).map(mapSimple));
       } catch (e: any) {
         setError(e?.message || "Unexpected error");
       }
