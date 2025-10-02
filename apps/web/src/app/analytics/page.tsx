@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart, PieChart, DollarSign, Users, Package, TrendingUp } from "lucide-react";
+import {
+  BarChart,
+  PieChart,
+  DollarSign,
+  Users,
+  Package,
+  TrendingUp,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -15,23 +22,16 @@ import {
   Pie,
   PieChart as RePieChart,
   Cell,
-  Legend
+  Legend,
 } from "recharts";
-
-// Peak Hours mock data
-const peakHours = [
-  { hour: "9AM", orders: 20 },
-  { hour: "12PM", orders: 200 },
-  { hour: "3PM", orders: 80 },
-  { hour: "6PM", orders: 150 },
-  { hour: "9PM", orders: 40 },
-];
+import { toast } from "sonner";
 
 const COLORS = ["#483AA0", "#7965C1", "#A499D9", "#C1BAF5"];
 
 export default function AnalyticsPage() {
   const [popularItems, setPopularItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [analyticsData, setAnalyticsData] = useState({} as any);
 
   const [salesData, setSalesData] = useState<any[]>([]);
   const [loadingSales, setLoadingSales] = useState(true);
@@ -53,18 +53,21 @@ export default function AnalyticsPage() {
         myHeaders.append("Authorization", `Bearer ${token}`);
         myHeaders.append("Content-Type", "application/json");
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/analytics/items`, {
-          method: "GET",
-          headers: myHeaders,
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/analytics/items`,
+          {
+            method: "GET",
+            headers: myHeaders,
+          }
+        );
 
         const json = await res.json();
-        console.log("Popular Items API response:", json);
+        toast("Successfully fetched popular items...");
 
         const itemsArray = Array.isArray(json.data) ? json.data : [];
         const formattedItems = itemsArray.map((item: any) => ({
           name: item.name || "Unknown",
-          value: item.count || 0
+          value: item.count || 0,
         }));
 
         setPopularItems(formattedItems);
@@ -94,18 +97,22 @@ export default function AnalyticsPage() {
         myHeaders.append("Authorization", `Bearer ${token}`);
         myHeaders.append("Content-Type", "application/json");
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/analytics/sales`, {
-          method: "GET",
-          headers: myHeaders,
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/analytics/sales`,
+          {
+            method: "GET",
+            headers: myHeaders,
+          }
+        );
 
         const json = await res.json();
-        console.log("Sales API response:", json);
 
+        toast("Successfully fetched sales data...");
+        setAnalyticsData(json);
         const rawData = json.data || {};
         const formatted = Object.entries(rawData).map(([date, amount]) => ({
           date,
-          amount
+          amount,
         }));
 
         setSalesData(formatted);
@@ -122,6 +129,7 @@ export default function AnalyticsPage() {
 
   // 📌 Calculate Total Revenue whenever salesData updates
   useEffect(() => {
+    toast("Calculating total revenue");
     if (salesData.length > 0) {
       const sum = salesData.reduce((acc, curr) => acc + Number(curr.amount), 0);
       setTotalRevenue(Math.round(sum)); // remove decimals
@@ -130,16 +138,25 @@ export default function AnalyticsPage() {
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
-      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">Analytics Dashboard</h1>
+      <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">
+        Analytics Dashboard
+      </h1>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Total Revenue
+              </p>
               <p className="text-2xl font-bold text-[#0E2148] dark:text-white">
-                {totalRevenue.toLocaleString("en-ZA", { style: "currency", currency: "ZAR", minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {totalRevenue.toLocaleString("en-ZA", {
+                  style: "currency",
+                  currency: "ZAR",
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </div>
             <DollarSign className="w-8 h-8 text-[#483AA0]" />
@@ -150,8 +167,12 @@ export default function AnalyticsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
-              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">1,247</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Total Orders
+              </p>
+              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">
+                {analyticsData.totalOrders || 0}
+              </p>
             </div>
             <Package className="w-8 h-8 text-[#7965C1]" />
           </div>
@@ -160,8 +181,12 @@ export default function AnalyticsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
-              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">834</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Active Users
+              </p>
+              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">
+                {analyticsData?.totalUsers || 0}
+              </p>
             </div>
             <Users className="w-8 h-8 text-[#483AA0]" />
           </div>
@@ -170,8 +195,12 @@ export default function AnalyticsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Avg Order Value</p>
-              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">R19.70</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Avg Order Value
+              </p>
+              <p className="text-2xl font-bold text-[#0E2148] dark:text-white">
+                R {analyticsData?.avgOrderValue?.toFixed(2) || 0}
+              </p>
             </div>
             <TrendingUp className="w-8 h-8 text-[#7965C1]" />
           </div>
@@ -193,7 +222,12 @@ export default function AnalyticsPage() {
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={salesData}>
-                <Line type="monotone" dataKey="amount" stroke="#483AA0" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="#483AA0"
+                  strokeWidth={2}
+                />
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
@@ -212,7 +246,9 @@ export default function AnalyticsPage() {
           {loadingItems ? (
             <p className="text-center">Loading popular items...</p>
           ) : popularItems.length === 0 ? (
-            <p className="text-center text-red-500">No popular items data found</p>
+            <p className="text-center text-red-500">
+              No popular items data found
+            </p>
           ) : (
             <ResponsiveContainer width="100%" height={350}>
               <RePieChart>
@@ -224,11 +260,18 @@ export default function AnalyticsPage() {
                   fill="#483AA0"
                 >
                   {popularItems.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend verticalAlign="middle" layout="vertical" align="right" />
+                <Legend
+                  verticalAlign="middle"
+                  layout="vertical"
+                  align="right"
+                />
               </RePieChart>
             </ResponsiveContainer>
           )}
@@ -236,9 +279,11 @@ export default function AnalyticsPage() {
 
         {/* Peak Hours chart */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 lg:col-start-1">
-          <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">Peak Hours Analysis</h2>
+          <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white mb-4">
+            Peak Hours Analysis
+          </h2>
           <ResponsiveContainer width="100%" height={250}>
-            <ReBarChart data={peakHours}>
+            <ReBarChart data={analyticsData.peakHours}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="hour" />
               <YAxis />
