@@ -29,6 +29,8 @@ import {
   ToggleRight,
   Image,
 } from "lucide-react";
+import { getAccessToken, getAuthStatus, getUserData, type UserData } from "../../lib/auth";
+import { Console } from "console";
 
 // --- API Endpoint Definition (for reference) ---
 const MENU_API_BASE_URL = "https://api-click-kos.netlify.app/menu";
@@ -54,6 +56,8 @@ interface Order {
   time: string;
   notes?: string;
   feedback?: boolean;
+  total_amount: number;
+  eta?: string;
 }
 
 interface MenuItemImage {
@@ -68,6 +72,12 @@ interface MenuItem {
   available: boolean;
   category: string;
   item_image?: MenuItemImage[];
+}
+
+interface OrderQueueProps {
+  orders: Order[];
+  completeOrder: (orderId: string) => void;
+  cancelOrder: (orderId: string) => void;
 }
 
 // Reusable Modal Component with fixed backdrop styling
@@ -307,6 +317,38 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
     </form>
   );
 };
+
+
+
+// Method to fetch orders
+const fetchOrders = async () => {
+  const accessToken = localStorage.getItem('access_token');
+  if (!accessToken) {
+    //console.error('No access token found');
+    return;
+  }
+
+  const myHeaders = new Headers();
+  myHeaders.append("Authorization", `Bearer ${accessToken}`);
+
+  const requestOptions = {
+    method: 'GET',
+    headers: myHeaders,
+  };
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, requestOptions);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const orders = await response.json();
+    console.log(orders);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+  }
+};
+
+fetchOrders();
 
 // Modal for updating a menu item
 interface UpdateMenuItemModalProps {
@@ -759,87 +801,121 @@ const DashboardSection: React.FC<{
 );
 
 const StaffDashboard: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // --- Start of new/reintroduced logic ---
+  const completeOrder = (orderId: string) => {
+    // TODO: Add API call to update order status on the server
+    setOrders(
+      orders.map((order) =>
+        order.id === orderId ? { ...order, status: "Completed" } : order
+      )
+    );
+  };
+
+  const cancelOrder = (orderId: string) => {
+    // TODO: Add API call to update order status on the server
+    setOrders(
+      orders.map((order) =>
+         order.id === orderId ? { ...order, status: "Cancelled" } : order
+       )
+    );
+  };
+  
+const fetchOrders = async () => {
+  try {
+    const token = getAccessToken();
+    if (!token) {
+      setError("Not authenticated");
+      return;
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', // Add cache: 'no-store' for fresh data
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data?.error || 'Failed to load orders');
+      setOrders([]);
+      return;
+    }
+
+    // Logic for 'staff'/'admin' role
+    const serverOrders = data?.orders ?? [];
+
+    const mappedOrders: Order[] = serverOrders.map((o: any) => {
+      // Map server's nested order_item array to the client's OrderItem interface
+      const items: OrderItem[] = (o.order_item ?? []).map((i: any) => ({
+        name: i.name ?? i?.menu_item?.name ?? `Item ${i.menu_item_id}`,
+        quantity: i.quantity,
+        // Calculate price per item from subtotal
+        price: i.subtotal / Math.max(1, i.quantity), 
+      }));
+
+      // Calculate total amount from the sum of subtotals
+      const total_amount = (o.order_item ?? []).reduce((sum: number, i: any) => sum + (i.subtotal ?? 0), 0);
+
+      return {
+        id: `Order ID: ` + o.order_id || o.id, // Use order_id from original code, but check for generic 'id'
+        customer: `${o.user_id}` || o.user_id,
+        items,
+        total_amount,
+        status: o.status ?? 'Pending', // Default to 'Pending'
+        time: (o.ordered_at ?? o.created_at)?.split?.('T')?.[0] ?? '',
+        notes: o.notes ?? undefined,
+        feedback: o.feedback ?? undefined,
+      } as Order;
+    });
+
+    setOrders(mappedOrders);
+
+  } catch (e: any) {
+    console.error("Error fetching orders:", e);
+    setError(e?.message || 'Unexpected error');
+    setOrders([]);
+  }
+};
+
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">
         Staff Dashboard
       </h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2">
-          <OrderQueue />
+      {error && (
+        <div className="p-3 mb-4 bg-red-100 dark:bg-red-900 border border-red-400 rounded text-red-800 dark:text-red-200 flex items-center">
+          <XCircle className="w-5 h-5 mr-2" />
+          {error}
         </div>
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-[#0E2148] to-[#483AA0] text-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Pending Orders</p>
-                <p className="text-2xl font-bold">8</p>
-              </div>
-              <Clock className="w-8 h-8 opacity-75" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-[#483AA0] to-[#7965C1] text-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Active Staff</p>
-                <p className="text-2xl font-bold">4</p>
-              </div>
-              <Users className="w-8 h-8 opacity-75" />
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-[#7965C1] to-[#483AA0] text-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Avg Wait Time</p>
-                <p className="text-2xl font-bold">12min</p>
-              </div>
-              <TrendingUp className="w-8 h-8 opacity-75" />
-            </div>
-          </div>
+      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <OrderQueue orders={orders} completeOrder={completeOrder} cancelOrder={cancelOrder} />
+        </div>
+        <div className="lg:col-span-1 space-y-4">
+          <MenuManagement />
         </div>
       </div>
-
-      {/* New Menu Management Section */}
-      <MenuManagement />
     </div>
   );
 };
 
 // OrderQueue component to display and manage a list of orders.
-const OrderQueue: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "ORD-001",
-      customer: "Natasha Paul",
-      items: [
-        { name: "Chicken Burger", quantity: 1, price: 55.0 },
-        { name: "Small Fries", quantity: 1, price: 20.0 },
-        { name: "Coke", quantity: 1, price: 15.0 },
-      ],
-      status: "Pending",
-      time: "2 mins ago",
-      notes: "No pickles on the burger.",
-    },
-    {
-      id: "ORD-002",
-      customer: "John Luke",
-      items: [
-        { name: "Grilled Steak Sandwich", quantity: 1, price: 75.0 },
-        { name: "Iced Tea", quantity: 2, price: 18.0 },
-      ],
-      status: "Pending",
-      time: "5 mins ago",
-      notes: "",
-    },
-    {
-      id: "ORD-003",
-      customer: "Reiner Smith",
-      items: [{ name: "Veggie Wrap", quantity: 1, price: 60.0 }],
-      status: "Pending",
-      time: "8 mins ago",
-      notes: "Add extra hot sauce.",
-    },
-  ]);
+const OrderQueue: React.FC<OrderQueueProps> = ({ orders,
+  completeOrder,
+  cancelOrder, }) => {
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -862,22 +938,6 @@ const OrderQueue: React.FC = () => {
     setOpenMenuId(null);
   };
 
-  const completeOrder = (orderId: string) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: "Completed" } : order
-      )
-    );
-  };
-
-  const cancelOrder = (orderId: string) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: "Cancelled" } : order
-      )
-    );
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
       <h2 className="text-xl font-semibold text-[#0E2148] dark:text-white mb-4 flex items-center gap-2">
@@ -890,6 +950,7 @@ const OrderQueue: React.FC = () => {
 
       <div className="space-y-4">
         {orders.length === 0 ? (
+          // Display this message when the orders array is empty
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p>No new orders at the moment.</p>
@@ -975,12 +1036,12 @@ const OrderQueue: React.FC = () => {
                       <CheckCircle2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => cancelOrder(order.id)}
-                      className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-                      aria-label={`Cancel order ${order.id}`}
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </button>
+                      onClick={() => cancelOrder(order.id)}
+                      className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                      aria-label={`Cancel order ${order.id}`}
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
               </div>
@@ -1130,47 +1191,71 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
 // The Student Dashboard component
 const StudentDashboard: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "ORD-001",
-      customer: "You",
-      items: [
-        { name: "Chicken Burger", quantity: 1, price: 55.0 },
-        { name: "Small Fries", quantity: 1, price: 20.0 },
-        { name: "Coke", quantity: 1, price: 15.0 },
-      ],
-      status: "Completed",
-      time: "2025-08-27 12:30",
-      feedback: false,
-    },
-    {
-      id: "ORD-002",
-      customer: "You",
-      items: [
-        { name: "Grilled Steak Sandwich", quantity: 1, price: 75.0 },
-        { name: "Iced Tea", quantity: 2, price: 18.0 },
-      ],
-      status: "Cancelled",
-      time: "2025-08-26 13:00",
-      feedback: false,
-    },
-    {
-      id: "ORD-003",
-      customer: "You",
-      items: [{ name: "Veggie Wrap", quantity: 1, price: 60.0 }],
-      status: "Completed",
-      time: "2025-08-25 11:45",
-      feedback: true,
-    },
-    {
-      id: "ORD-004",
-      customer: "You",
-      items: [{ name: "Tuna Salad", quantity: 1, price: 45.0 }],
-      status: "Pending",
-      time: "2025-08-28 10:30",
-      feedback: false,
-    },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [error, setError] = useState<string | null>(null); // Add error state
+
+  const fetchOrders = async () => {
+  try {
+    const token = getAccessToken();
+    if (!token) {
+      setError("Not authenticated");
+      return;
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data?.error || 'Failed to load your orders');
+      setOrders([]);
+      return;
+    }
+
+    // Student API returns { currentOrders: [], pastOrders: [] }
+    const { currentOrders: current, pastOrders: past } = data;
+    
+    // Combine the two arrays
+    const rawOrders = [...(current ?? []), ...(past ?? [])];
+
+    const mappedOrders: Order[] = rawOrders.map((o: any) => {
+
+      const simplifiedItem: OrderItem = {
+        name: o.item || "Multiple Items", // The server returns a joined string of items
+        quantity: 1, 
+        price: o.price, // The server returns the total price in this field
+      };
+
+      return {
+        id: o.id,
+        customer: "You",
+        // This is a necessary simplification based on the current user API response format
+        items: [simplifiedItem], 
+        total_amount: o.price,
+        status: o.status ?? 'Pending',
+        time: (o.date)?.split?.('T')?.[0] ?? '',
+        // The current user API response does NOT include notes or feedback status,
+
+        notes: undefined, 
+        feedback: false, 
+      } as Order;
+    });
+
+    setOrders(mappedOrders);
+
+  } catch (e: any) {
+    console.error("Error fetching student orders:", e);
+    setError(e?.message || 'Unexpected error fetching orders');
+    setOrders([]);
+  }
+};
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
@@ -1204,24 +1289,20 @@ const StudentDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    const pendingOrder = orders.find((o) => o.status === "Pending");
-    if (pendingOrder) {
-      const timer = setTimeout(() => {
-        setOrders(
-          orders.map((o) =>
-            o.id === pendingOrder.id ? { ...o, status: "Completed" } : o
-          )
-        );
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [orders]);
+    fetchOrders();
+  }, []);
 
   return (
     <div>
       <h1 className="text-3xl font-bold text-[#0E2148] dark:text-white mb-6">
         Student Dashboard
       </h1>
+      {error && ( // New Error Display Block
+        <div className="p-3 mb-4 bg-red-100 dark:bg-red-900 border border-red-400 rounded text-red-800 dark:text-red-200 flex items-center">
+          <XCircle className="w-5 h-5 mr-2" />
+          {error}
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -1275,19 +1356,14 @@ const StudentDashboard: React.FC = () => {
             </div>
           ) : (
             orders
-              .sort(
-                (a, b) =>
-                  new Date(b.time).getTime() - new Date(a.time).getTime()
-              )
-              .map((order) => (
-                <div
-                  key={order.id}
-                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-sm"
-                >
+              .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+              .map((order, index) => (
+                <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                  {/* order details */}
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-lg text-blue-600 dark:text-blue-400">
-                        {order.id}
+                        #{index + 1} {/* Use index + 1 to display a order number */}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         ({order.time})
@@ -1408,37 +1484,51 @@ const StudentDashboard: React.FC = () => {
   );
 };
 
-// The main component that switches between dashboards.
-export default function DashboardSwitcher() {
-  const [activeDashboard, setActiveDashboard] = useState<"staff" | "student">(
-    "staff"
-  );
-
+const LoginForm = () => {
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-6">
-      {activeDashboard === "staff" ? <StaffDashboard /> : <StudentDashboard />}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 rounded-full bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 z-50">
-        <button
-          onClick={() => setActiveDashboard("staff")}
-          className={`px-4 py-1 text-sm rounded-full font-semibold transition-colors ${
-            activeDashboard === "staff"
-              ? "bg-[#483AA0] text-white shadow"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
-        >
-          Staff
-        </button>
-        <button
-          onClick={() => setActiveDashboard("student")}
-          className={`px-4 py-1 text-sm rounded-full font-semibold transition-colors ${
-            activeDashboard === "student"
-              ? "bg-[#483AA0] text-white shadow"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
-        >
-          Student
-        </button>
+    <div className="flex justify-center items-center h-screen">
+      <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 max-w-md w-full text-center">
+        <h2 className="text-2xl font-bold mb-4">Access Required</h2>
+        <p className="text-lg font-medium mb-6">Login to view dashboard</p>
       </div>
     </div>
   );
+};
+
+// The main component that switches between dashboards.
+export default function DashboardSwitcher() {
+  const [activeDashboard, setActiveDashboard] = useState<"staff" | "student" | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const isLoggedIn = getAuthStatus();
+      const userData = getUserData();
+      console.log(userData);
+      setIsLoggedIn(isLoggedIn);
+      setUserData(userData);
+      if (isLoggedIn && userData) {
+        if (userData.role === "admin" || userData.role === "staff") {
+          setActiveDashboard("staff");
+        } else if (userData.role === "student") {
+          setActiveDashboard("student");
+        } else {
+          console.error("Unexpected user role:", userData.role);
+        }
+      }
+    };
+    checkAuthStatus();
+  }, []);
+
+  if (!isLoggedIn) {
+    return <LoginForm />;
+  }
+
+  return (
+    <div className="container mx-auto max-w-full lg:max-w-screen-lg xl:max-w-screen-xl px-4 py-6">
+  {activeDashboard === "staff" ? <StaffDashboard /> : <StudentDashboard />}
+</div>
+  );
 }
+
