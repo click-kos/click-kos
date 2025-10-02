@@ -944,7 +944,7 @@ const OrderQueue: React.FC<OrderQueueProps> = ({ orders,
         <Package className="w-5 h-5 text-[#483AA0]" />
         Order Queue
         <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-          ({orders.filter((o) => o.status === "Pending").length} pending)
+          ({orders.filter((o) => o.status.toLowerCase() === "pending").length} pending)
         </span>
       </h2>
 
@@ -1326,7 +1326,7 @@ const StudentDashboard: React.FC = () => {
               <div>
                 <p className="text-sm opacity-90">Pending Orders</p>
                 <p className="text-2xl font-bold">
-                  {orders.filter((o) => o.status === "Pending").length}
+                  {orders.filter((o) => o.status.toLowerCase() === "pending").length}
                 </p>
               </div>
               <Clock className="w-8 h-8 opacity-75" />
