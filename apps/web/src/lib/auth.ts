@@ -1,3 +1,4 @@
+"use client"
 // Authentication utility functions
 
 export interface UserData {
