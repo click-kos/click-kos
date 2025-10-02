@@ -29,11 +29,12 @@ import {
   ToggleRight,
   Image,
 } from "lucide-react";
-import { getAccessToken, getAuthStatus, getUserData, type UserData } from "../../lib/auth";
-import { Console } from "console";
-
-// --- API Endpoint Definition (for reference) ---
-const MENU_API_BASE_URL = "https://api-click-kos.netlify.app/menu";
+import {
+  getAccessToken,
+  getAuthStatus,
+  getUserData,
+  type UserData,
+} from "../../lib/auth";
 
 // Define interfaces for types
 interface ModalProps {
@@ -318,11 +319,9 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
   );
 };
 
-
-
 // Method to fetch orders
 const fetchOrders = async () => {
-  const accessToken = localStorage.getItem('access_token');
+  const accessToken = localStorage.getItem("access_token");
   if (!accessToken) {
     //console.error('No access token found');
     return;
@@ -332,23 +331,24 @@ const fetchOrders = async () => {
   myHeaders.append("Authorization", `Bearer ${accessToken}`);
 
   const requestOptions = {
-    method: 'GET',
+    method: "GET",
     headers: myHeaders,
   };
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, requestOptions);
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/order`,
+      requestOptions
+    );
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const orders = await response.json();
     console.log(orders);
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error("Error fetching orders:", error);
   }
 };
-
-fetchOrders();
 
 // Modal for updating a menu item
 interface UpdateMenuItemModalProps {
@@ -804,86 +804,94 @@ const StaffDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetchOrders();
+  });
+
   // --- Start of new/reintroduced logic ---
-  const completeOrder = (orderId: string) => {
-    // TODO: Add API call to update order status on the server
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: "Completed" } : order
-      )
-    );
-  };
-
-  const cancelOrder = (orderId: string) => {
-    // TODO: Add API call to update order status on the server
-    setOrders(
-      orders.map((order) =>
-         order.id === orderId ? { ...order, status: "Cancelled" } : order
-       )
-    );
+  const completeOrder = (orderId: string) => {
+    // TODO: Add API call to update order status on the server
+    setOrders(
+      orders.map((order) =>
+        order.id === orderId ? { ...order, status: "Completed" } : order
+      )
+    );
   };
-  
-const fetchOrders = async () => {
-  try {
-    const token = getAccessToken();
-    if (!token) {
-      setError("Not authenticated");
-      return;
-    }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store', // Add cache: 'no-store' for fresh data
-    });
+  const cancelOrder = (orderId: string) => {
+    // TODO: Add API call to update order status on the server
+    setOrders(
+      orders.map((order) =>
+        order.id === orderId ? { ...order, status: "Cancelled" } : order
+      )
+    );
+  };
 
-    const data = await response.json();
+  const fetchOrders = async () => {
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        setError("Not authenticated");
+        return;
+      }
 
-    if (!response.ok) {
-      setError(data?.error || 'Failed to load orders');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/order`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          cache: "no-store", // Add cache: 'no-store' for fresh data
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error || "Failed to load orders");
+        setOrders([]);
+        return;
+      }
+
+      // Logic for 'staff'/'admin' role
+      const serverOrders = data?.orders ?? [];
+
+      const mappedOrders: Order[] = serverOrders.map((o: any) => {
+        // Map server's nested order_item array to the client's OrderItem interface
+        const items: OrderItem[] = (o.order_item ?? []).map((i: any) => ({
+          name: i.name ?? i?.menu_item?.name ?? `Item ${i.menu_item_id}`,
+          quantity: i.quantity,
+          // Calculate price per item from subtotal
+          price: i.subtotal / Math.max(1, i.quantity),
+        }));
+
+        // Calculate total amount from the sum of subtotals
+        const total_amount = (o.order_item ?? []).reduce(
+          (sum: number, i: any) => sum + (i.subtotal ?? 0),
+          0
+        );
+
+        return {
+          id: `Order ID: ` + o.order_id || o.id, // Use order_id from original code, but check for generic 'id'
+          customer: `${o.user_id}` || o.user_id,
+          items,
+          total_amount,
+          status: o.status ?? "Pending", // Default to 'Pending'
+          time: (o.ordered_at ?? o.created_at)?.split?.("T")?.[0] ?? "",
+          notes: o.notes ?? undefined,
+          feedback: o.feedback ?? undefined,
+        } as Order;
+      });
+
+      setOrders(mappedOrders);
+    } catch (e: any) {
+      console.error("Error fetching orders:", e);
+      setError(e?.message || "Unexpected error");
       setOrders([]);
-      return;
     }
-
-    // Logic for 'staff'/'admin' role
-    const serverOrders = data?.orders ?? [];
-
-    const mappedOrders: Order[] = serverOrders.map((o: any) => {
-      // Map server's nested order_item array to the client's OrderItem interface
-      const items: OrderItem[] = (o.order_item ?? []).map((i: any) => ({
-        name: i.name ?? i?.menu_item?.name ?? `Item ${i.menu_item_id}`,
-        quantity: i.quantity,
-        // Calculate price per item from subtotal
-        price: i.subtotal / Math.max(1, i.quantity), 
-      }));
-
-      // Calculate total amount from the sum of subtotals
-      const total_amount = (o.order_item ?? []).reduce((sum: number, i: any) => sum + (i.subtotal ?? 0), 0);
-
-      return {
-        id: `Order ID: ` + o.order_id || o.id, // Use order_id from original code, but check for generic 'id'
-        customer: `${o.user_id}` || o.user_id,
-        items,
-        total_amount,
-        status: o.status ?? 'Pending', // Default to 'Pending'
-        time: (o.ordered_at ?? o.created_at)?.split?.('T')?.[0] ?? '',
-        notes: o.notes ?? undefined,
-        feedback: o.feedback ?? undefined,
-      } as Order;
-    });
-
-    setOrders(mappedOrders);
-
-  } catch (e: any) {
-    console.error("Error fetching orders:", e);
-    setError(e?.message || 'Unexpected error');
-    setOrders([]);
-  }
-};
-
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -902,7 +910,11 @@ const fetchOrders = async () => {
       )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <OrderQueue orders={orders} completeOrder={completeOrder} cancelOrder={cancelOrder} />
+          <OrderQueue
+            orders={orders}
+            completeOrder={completeOrder}
+            cancelOrder={cancelOrder}
+          />
         </div>
         <div className="lg:col-span-1 space-y-4">
           <MenuManagement />
@@ -913,10 +925,11 @@ const fetchOrders = async () => {
 };
 
 // OrderQueue component to display and manage a list of orders.
-const OrderQueue: React.FC<OrderQueueProps> = ({ orders,
+const OrderQueue: React.FC<OrderQueueProps> = ({
+  orders,
   completeOrder,
-  cancelOrder, }) => {
-
+  cancelOrder,
+}) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -1036,12 +1049,13 @@ const OrderQueue: React.FC<OrderQueueProps> = ({ orders,
                       <CheckCircle2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => cancelOrder(order.id)}
-                      className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-                      aria-label={`Cancel order ${order.id}`}
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </button>
+                      onClick={() => cancelOrder(order.id)}
+                      className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                      aria-label={`Cancel order ${order.id}`}
+                    >
+                                            <XCircle className="w-4 h-4" />     
+                                   {" "}
+                    </button>
                   </div>
                 )}
               </div>
@@ -1195,67 +1209,68 @@ const StudentDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null); // Add error state
 
   const fetchOrders = async () => {
-  try {
-    const token = getAccessToken();
-    if (!token) {
-      setError("Not authenticated");
-      return;
-    }
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        setError("Not authenticated");
+        return;
+      }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/order`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        }
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      setError(data?.error || 'Failed to load your orders');
+      if (!response.ok) {
+        setError(data?.error || "Failed to load your orders");
+        setOrders([]);
+        return;
+      }
+
+      // Student API returns { currentOrders: [], pastOrders: [] }
+      const { currentOrders: current, pastOrders: past } = data;
+
+      // Combine the two arrays
+      const rawOrders = [...(current ?? []), ...(past ?? [])];
+
+      const mappedOrders: Order[] = rawOrders.map((o: any) => {
+        const simplifiedItem: OrderItem = {
+          name: o.item || "Multiple Items", // The server returns a joined string of items
+          quantity: 1,
+          price: o.price, // The server returns the total price in this field
+        };
+
+        return {
+          id: o.id,
+          customer: "You",
+          // This is a necessary simplification based on the current user API response format
+          items: [simplifiedItem],
+          total_amount: o.price,
+          status: o.status ?? "Pending",
+          time: o.date?.split?.("T")?.[0] ?? "",
+          // The current user API response does NOT include notes or feedback status,
+
+          notes: undefined,
+          feedback: false,
+        } as Order;
+      });
+
+      setOrders(mappedOrders);
+    } catch (e: any) {
+      console.error("Error fetching student orders:", e);
+      setError(e?.message || "Unexpected error fetching orders");
       setOrders([]);
-      return;
     }
-
-    // Student API returns { currentOrders: [], pastOrders: [] }
-    const { currentOrders: current, pastOrders: past } = data;
-    
-    // Combine the two arrays
-    const rawOrders = [...(current ?? []), ...(past ?? [])];
-
-    const mappedOrders: Order[] = rawOrders.map((o: any) => {
-
-      const simplifiedItem: OrderItem = {
-        name: o.item || "Multiple Items", // The server returns a joined string of items
-        quantity: 1, 
-        price: o.price, // The server returns the total price in this field
-      };
-
-      return {
-        id: o.id,
-        customer: "You",
-        // This is a necessary simplification based on the current user API response format
-        items: [simplifiedItem], 
-        total_amount: o.price,
-        status: o.status ?? 'Pending',
-        time: (o.date)?.split?.('T')?.[0] ?? '',
-        // The current user API response does NOT include notes or feedback status,
-
-        notes: undefined, 
-        feedback: false, 
-      } as Order;
-    });
-
-    setOrders(mappedOrders);
-
-  } catch (e: any) {
-    console.error("Error fetching student orders:", e);
-    setError(e?.message || 'Unexpected error fetching orders');
-    setOrders([]);
-  }
-};
+  };
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
@@ -1356,14 +1371,21 @@ const StudentDashboard: React.FC = () => {
             </div>
           ) : (
             orders
-              .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+              .sort(
+                (a, b) =>
+                  new Date(b.time).getTime() - new Date(a.time).getTime()
+              )
               .map((order, index) => (
-                <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                <div
+                  key={index}
+                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-sm"
+                >
                   {/* order details */}
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-lg text-blue-600 dark:text-blue-400">
-                        #{index + 1} {/* Use index + 1 to display a order number */}
+                        #{index + 1}{" "}
+                        {/* Use index + 1 to display a order number */}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         ({order.time})
@@ -1497,7 +1519,9 @@ const LoginForm = () => {
 
 // The main component that switches between dashboards.
 export default function DashboardSwitcher() {
-  const [activeDashboard, setActiveDashboard] = useState<"staff" | "student" | null>(null);
+  const [activeDashboard, setActiveDashboard] = useState<
+    "staff" | "student" | null
+  >(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
 
@@ -1527,8 +1551,7 @@ export default function DashboardSwitcher() {
 
   return (
     <div className="container mx-auto max-w-full lg:max-w-screen-lg xl:max-w-screen-xl px-4 py-6">
-  {activeDashboard === "staff" ? <StaffDashboard /> : <StudentDashboard />}
-</div>
-  );
+      {activeDashboard === "staff" ? <StaffDashboard /> : <StudentDashboard />}
+    </div>
+  );
 }
-
