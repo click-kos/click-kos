@@ -49,7 +49,7 @@ export const setAuthStatus = (isAuthenticated: boolean, userData?: UserData): vo
   window.dispatchEvent(new CustomEvent('authStateChanged'));
 };
 
-export const clearAuth = (): void => {
+export const clearAuth = (storage?:any): void => {
   if (typeof window === 'undefined') return;
   
   localStorage.removeItem(AUTH_STORAGE_KEY);

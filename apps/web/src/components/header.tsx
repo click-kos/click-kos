@@ -10,9 +10,7 @@ import {
   getUserData,
   clearAuth,
   type UserData,
-
   isAuthenticated,
-
 } from "../lib/auth";
 import { Button } from "./ui/button";
 
@@ -29,17 +27,17 @@ interface Tab {
   id: TabId;
   label: string;
   href: string;
+  isPublic: boolean;
 }
 
 const tabs: Tab[] = [
-  { id: "overview", label: "Overview", href: "/" },
-  { id: "menu", label: "Menu", href: "/menu" },
-  { id: "orders", label: "Orders", href: "/orders" },
-  { id: "dashboard", label: "Dashboard", href: "/dashboard" },
-  { id: "analytics", label: "Analytics", href: "/analytics" },
-  { id: "admin", label: "Admin", href: "/admin" },
+  { id: "overview", label: "Overview", href: "/", isPublic: true },
+  { id: "menu", label: "Menu", href: "/menu", isPublic: true },
+  { id: "orders", label: "Orders", href: "/orders", isPublic: true },
+  { id: "dashboard", label: "Dashboard", href: "/dashboard", isPublic: true },
+  { id: "analytics", label: "Analytics", href: "/analytics", isPublic: false },
+  { id: "admin", label: "Admin", href: "/admin", isPublic: false },
 ];
-
 
 // Default user data
 const defaultUser: UserData = {
@@ -47,8 +45,6 @@ const defaultUser: UserData = {
   email: "37853058@mynwu.ac.za",
   role: "Student",
 };
-
-
 
 export default function Header() {
   const pathname = usePathname();
@@ -61,7 +57,6 @@ export default function Header() {
   // Check authentication status and user data on component mount and when localStorage changes
   useEffect(() => {
     const checkAuthStatus = () => {
-
       const authStatus = getAuthStatus();
       const user = getUserData();
 
@@ -77,7 +72,6 @@ export default function Header() {
       const userData = getUserData();
       setIsLoggedIn(authenticated);
       setUserData(userData);
-
     };
 
     // Check immediately
@@ -85,7 +79,11 @@ export default function Header() {
 
     // Listen for storage changes (when login/logout happens in other tabs/windows)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "isAuthenticated" || e.key === "user" || e.key === "access_token") {
+      if (
+        e.key === "isAuthenticated" ||
+        e.key === "user" ||
+        e.key === "access_token"
+      ) {
         checkAuthStatus();
       }
     };
@@ -116,7 +114,7 @@ export default function Header() {
     setShowProfileMenu(false);
 
     // Clear authentication data using the utility function
-    clearAuth();
+    clearAuth(localStorage);
 
     // Navigate to login page
     window.location.href = "/auth/login";
@@ -181,7 +179,6 @@ export default function Header() {
             ></div>
           )}
 
-
           <nav
             className={`${
               mobileNavOpen ? "flex" : "hidden"
@@ -200,24 +197,41 @@ export default function Header() {
                   onClick={toggleMobileNav}
                 >
                   <X className="w-5 h-5" />
-
                 </Button>
               </div>
             )}
-            {tabs.map((tab) => (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                onClick={() => setMobileNavOpen(false)}
-                className={`px-4 py-3 lg:py-2 rounded-lg lg:rounded-md text-sm lg:text-sm font-medium transition-colors mb-2 lg:mb-0 ${
-                  isActiveTab(tab.href)
-                    ? "bg-[#483AA0] text-white shadow-sm"
-                    : "text-gray-700 dark:text-gray-300 lg:text-gray-600 dark:lg:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hover:text-[#483AA0] dark:lg:hover:text-[#7965C1]"
-                }`}
-              >
-                {tab.label}
-              </Link>
-            ))}
+            {tabs.map((tab) =>
+              !tab.isPublic &&
+              (userData?.role == "admin" || userData?.role == "staff") ? (
+                <Link
+                  key={tab.id}
+                  href={tab.href}
+                  onClick={() => setMobileNavOpen(false)}
+                  className={`px-4 py-3 lg:py-2 rounded-lg lg:rounded-md text-sm lg:text-sm font-medium transition-colors mb-2 lg:mb-0 ${
+                    isActiveTab(tab.href)
+                      ? "bg-[#483AA0] text-white shadow-sm"
+                      : "text-gray-700 dark:text-gray-300 lg:text-gray-600 dark:lg:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hover:text-[#483AA0] dark:lg:hover:text-[#7965C1]"
+                  }`}
+                >
+                  {tab.label}
+                </Link>
+              ) : tab.isPublic ? (
+                <Link
+                  key={tab.id}
+                  href={tab.href}
+                  onClick={() => setMobileNavOpen(false)}
+                  className={`px-4 py-3 lg:py-2 rounded-lg lg:rounded-md text-sm lg:text-sm font-medium transition-colors mb-2 lg:mb-0 ${
+                    isActiveTab(tab.href)
+                      ? "bg-[#483AA0] text-white shadow-sm"
+                      : "text-gray-700 dark:text-gray-300 lg:text-gray-600 dark:lg:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hover:text-[#483AA0] dark:lg:hover:text-[#7965C1]"
+                  }`}
+                >
+                  {tab.label}
+                </Link>
+              ) : (
+                ""
+              )
+            )}
 
             {/* Mobile Auth Section */}
             {mobileNavOpen && (

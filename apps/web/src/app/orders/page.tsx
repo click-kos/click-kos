@@ -38,41 +38,45 @@ export default function OrdersPage() {
         }
 
         // Fetch profile first (same pattern as profile page) to validate token and get role
-        const profileRes = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/auth/profile`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const profileRes = await fetch(
+          `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/profile`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         if (!profileRes.ok) {
           const errJson = await profileRes.json().catch(() => ({}));
-          setError(errJson?.error || 'Failed to load profile');
+          setError(errJson?.error || "Failed to load profile");
           return;
         }
         const profileJson = await profileRes.json();
-        const role = profileJson?.user?.role ?? getUserData()?.role ?? 'student';
+        const role =
+          profileJson?.user?.role ?? getUserData()?.role ?? "student";
 
         // Now fetch orders
         const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/order`, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          cache: 'no-store',
+          cache: "no-store",
         });
 
         const data = await res.json();
         if (!res.ok) {
-          setError(data?.error || 'Failed to load orders');
+          setError(data?.error || "Failed to load orders");
           setCurrentOrders([]);
           setPastOrders([]);
           return;
         }
 
-        if (role === 'staff' || role === 'admin') {
+        if (role === "staff" || role === "admin") {
           // Server returns { orders } with order_item nested
           const orders = (data?.orders ?? []).map((o: any) => {
             const items = (o.order_item ?? []).map((i: any) => ({
@@ -81,14 +85,17 @@ export default function OrdersPage() {
               quantity: i.quantity,
               price: i.subtotal / Math.max(1, i.quantity),
             }));
-            const total_amount = (o.order_item ?? []).reduce((sum: number, i: any) => sum + (i.subtotal ?? 0), 0);
+            const total_amount = (o.order_item ?? []).reduce(
+              (sum: number, i: any) => sum + (i.subtotal ?? 0),
+              0
+            );
             return {
               id: o.id,
               items,
               total_amount,
-              status: o.status ?? 'pending',
+              status: o.status ?? "pending",
               eta: o.eta ?? undefined,
-              date: (o.ordered_at ?? o.created_at)?.split?.('T')?.[0] ?? '',
+              date: (o.ordered_at ?? o.created_at)?.split?.("T")?.[0] ?? "",
             } as OrderItem;
           });
           // For staff view, show all as current orders
@@ -97,18 +104,35 @@ export default function OrdersPage() {
         } else {
           // Student response: { currentOrders, pastOrders } expand "item" string into items list
           const mapSimple = (o: any): OrderItem => {
-            const itemStr = (o.item ?? '').toString();
-            const names = itemStr.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
-            const items = names.length > 0
-              ? names.map((name: string) => ({ menu_item_id: '', name, quantity: 1, price: 0 }))
-              : [{ menu_item_id: '', name: 'Order', quantity: 1, price: Number(o.price ?? 0) }];
+            const itemStr = (o.item ?? "").toString();
+            const names = itemStr
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter((s: string) => s.length > 0);
+            const items =
+              names.length > 0
+                ? names.map((name: string) => ({
+                    menu_item_id: "",
+                    name,
+                    quantity: 1,
+                    price: 0,
+                  }))
+                : [
+                    {
+                      menu_item_id: "",
+                      name: "Order",
+                      quantity: 1,
+                      price: Number(o.price ?? 0),
+                    },
+                  ];
             return {
               id: o.id,
               items,
               total_amount: Number(o.price ?? 0),
-              status: o.status ?? 'pending',
+              status: o.status ?? "pending",
               eta: o.eta ?? undefined,
-              date: (o.date ?? o.created_at ?? '').toString().split('T')[0] ?? '',
+              date:
+                (o.date ?? o.created_at ?? "").toString().split("T")[0] ?? "",
             } as OrderItem;
           };
 
@@ -116,7 +140,7 @@ export default function OrdersPage() {
           setPastOrders((data?.pastOrders ?? []).map(mapSimple));
         }
       } catch (e: any) {
-        setError(e?.message || 'Unexpected error');
+        setError(e?.message || "Unexpected error");
       }
     };
 
@@ -185,7 +209,7 @@ export default function OrdersPage() {
             <div className="space-y-4">
               {currentOrders.map((order, idx) => (
                 <div
-                  key={`${order.id ?? 'order'}-${idx}`}
+                  key={`${order.id ?? "order"}-${idx}`}
                   className="flex flex-col p-4 border rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 dark:border-gray-700"
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -194,16 +218,28 @@ export default function OrdersPage() {
                         {order.items
                           .filter((i) => i.name && i.name.trim().length > 0)
                           .map((i) => `${i.name} x${i.quantity}`)
-                          .join(", ") || `Order x${order.items.reduce((sum, i) => sum + i.quantity, 0)}`}
+                          .join(", ") ||
+                          `Order x${order.items.reduce(
+                            (sum, i) => sum + i.quantity,
+                            0
+                          )}`}
                       </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Date: {order.date}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Date: {order.date}
+                      </p>
                     </div>
-                    <span className="font-bold text-[#483AA0]">R{order.total_amount.toFixed(2)}</span>
+                    <span className="font-bold text-[#483AA0]">
+                      R{order.total_amount.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     {getStatusIcon(order.status)}
                     <span className="capitalize">{order.status}</span>
-                    {order.eta && <span className="text-sm text-gray-400">• ETA: {order.eta}</span>}
+                    {order.eta && (
+                      <span className="text-sm text-gray-400">
+                        • ETA: {order.eta}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -225,7 +261,7 @@ export default function OrdersPage() {
             <div className="space-y-4">
               {pastOrders.map((order, idx) => (
                 <div
-                  key={`${order.id ?? 'order'}-${idx}`}
+                  key={`${order.id ?? "order"}-${idx}`}
                   className="flex flex-col p-4 border rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 dark:border-gray-700"
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -234,11 +270,19 @@ export default function OrdersPage() {
                         {order.items
                           .filter((i) => i.name && i.name.trim().length > 0)
                           .map((i) => `${i.name} x${i.quantity}`)
-                          .join(", ") || `Order x${order.items.reduce((sum, i) => sum + i.quantity, 0)}`}
+                          .join(", ") ||
+                          `Order x${order.items.reduce(
+                            (sum, i) => sum + i.quantity,
+                            0
+                          )}`}
                       </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Date: {order.date}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Date: {order.date}
+                      </p>
                     </div>
-                    <span className="font-bold text-[#483AA0]">R{order.total_amount.toFixed(2)}</span>
+                    <span className="font-bold text-[#483AA0]">
+                      R{order.total_amount.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-2">
