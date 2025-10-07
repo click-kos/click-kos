@@ -47,6 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
+    console.log(id);
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
     if (!status)
@@ -65,7 +66,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { data: order, error } = await supabase
       .from("order")
       .update({ status })
-      .eq("id", id)
+      .eq("order_id", id)
       .select()
       .single();
     if (error) throw error;

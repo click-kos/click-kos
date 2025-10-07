@@ -35,6 +35,7 @@ import {
   getUserData,
   type UserData,
 } from "../../lib/auth";
+import { toast } from "sonner";
 
 // Define interfaces for types
 interface ModalProps {
@@ -53,7 +54,7 @@ interface Order {
   id: string;
   customer: string;
   items: OrderItem[];
-  status: "Pending" | "Completed" | "Cancelled";
+  status: "pending" | "completed" | "cancelled";
   time: string;
   notes?: string;
   feedback?: boolean;
@@ -809,20 +810,67 @@ const StaffDashboard: React.FC = () => {
   });
 
   // --- Start of new/reintroduced logic ---
-  const completeOrder = (orderId: string) => {
+  const completeOrder = async (orderId: string) => {
+    const token = getAccessToken();
+    if (!token) {
+      setError("Not authenticated");
+      return;
+    }
+    const req = await fetch(
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/order/${orderId}?status=completed`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    const res = await req.json();
+    if (res.error) {
+      toast("Failed to complete order: " + orderId);
+    } else {
+      toast("Successfully completed order: " + orderId);
+    }
     // TODO: Add API call to update order status on the server
+
     setOrders(
       orders.map((order) =>
-        order.id === orderId ? { ...order, status: "Completed" } : order
+        order.id === orderId ? { ...order, status: "completed" } : order
       )
     );
   };
 
-  const cancelOrder = (orderId: string) => {
+  const cancelOrder = async (orderId: string) => {
+    const token = getAccessToken();
+    if (!token) {
+      setError("Not authenticated");
+      return;
+    }
+    const req = await fetch(
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/order/${orderId}?status=cancelled`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    const res = await req.json();
+    if (res.error) {
+      toast("Failed to cancel order: " + orderId);
+    } else {
+      toast("Successfully cancelled order: " + orderId);
+    }
     // TODO: Add API call to update order status on the server
     setOrders(
       orders.map((order) =>
-        order.id === orderId ? { ...order, status: "Cancelled" } : order
+        order.id === orderId ? { ...order, status: "cancelled" } : order
       )
     );
   };
@@ -874,11 +922,11 @@ const StaffDashboard: React.FC = () => {
         );
 
         return {
-          id: `Order ID: ` + o.order_id || o.id, // Use order_id from original code, but check for generic 'id'
+          id: o.order_id || o.id, // Use order_id from original code, but check for generic 'id'
           customer: `${o.user_id}` || o.user_id,
           items,
           total_amount,
-          status: o.status ?? "Pending", // Default to 'Pending'
+          status: o.status ?? "pending", // Default to 'pending'
           time: (o.ordered_at ?? o.created_at)?.split?.("T")?.[0] ?? "",
           notes: o.notes ?? undefined,
           feedback: o.feedback ?? undefined,
@@ -957,7 +1005,8 @@ const OrderQueue: React.FC<OrderQueueProps> = ({
         <Package className="w-5 h-5 text-[#483AA0]" />
         Order Queue
         <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-          ({orders.filter((o) => o.status.toLowerCase() === "pending").length} pending)
+          ({orders.filter((o) => o.status.toLowerCase() === "pending").length}{" "}
+          pending)
         </span>
       </h2>
 
@@ -1029,9 +1078,9 @@ const OrderQueue: React.FC<OrderQueueProps> = ({
               <div className="mt-4 flex justify-between items-center">
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    order.status === "Pending"
+                    order.status === "pending"
                       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                      : order.status === "Completed"
+                      : order.status === "completed"
                       ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                       : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                   }`}
@@ -1039,7 +1088,7 @@ const OrderQueue: React.FC<OrderQueueProps> = ({
                   {order.status}
                 </span>
 
-                {order.status === "Pending" && (
+                {order.status === "pending" && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => completeOrder(order.id)}
@@ -1255,7 +1304,7 @@ const StudentDashboard: React.FC = () => {
           // This is a necessary simplification based on the current user API response format
           items: [simplifiedItem],
           total_amount: o.price,
-          status: o.status ?? "Pending",
+          status: o.status ?? "pending",
           time: o.date?.split?.("T")?.[0] ?? "",
           // The current user API response does NOT include notes or feedback status,
 
@@ -1339,9 +1388,12 @@ const StudentDashboard: React.FC = () => {
           <div className="bg-gradient-to-r from-[#0E2148] to-[#483AA0] text-white rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">Pending Orders</p>
+                <p className="text-sm opacity-90">pending Orders</p>
                 <p className="text-2xl font-bold">
-                  {orders.filter((o) => o.status.toLowerCase() === "pending").length}
+                  {
+                    orders.filter((o) => o.status.toLowerCase() === "pending")
+                      .length
+                  }
                 </p>
               </div>
               <Clock className="w-8 h-8 opacity-75" />
@@ -1404,16 +1456,16 @@ const StudentDashboard: React.FC = () => {
                   <div className="mt-4 flex justify-between items-center">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        order.status === "Pending"
+                        order.status === "pending"
                           ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 animate-pulse"
-                          : order.status === "Completed"
+                          : order.status === "completed"
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                           : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                       }`}
                     >
                       {order.status}
                     </span>
-                    {order.status === "Completed" && !order.feedback && (
+                    {order.status === "completed" && !order.feedback && (
                       <button
                         onClick={() => handleFeedbackClick(order)}
                         className="flex items-center gap-1 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
@@ -1424,12 +1476,12 @@ const StudentDashboard: React.FC = () => {
                         </span>
                       </button>
                     )}
-                    {order.status === "Completed" && order.feedback && (
+                    {order.status === "completed" && order.feedback && (
                       <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
                         <CheckCircle2 className="w-4 h-4" /> Feedback Submitted
                       </span>
                     )}
-                    {order.status === "Pending" && (
+                    {order.status === "pending" && (
                       <button
                         onClick={() => {}}
                         className="flex items-center gap-1 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
