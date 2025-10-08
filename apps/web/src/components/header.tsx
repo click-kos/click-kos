@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { LogIn, LogOut, Menu, User, X } from "lucide-react";
 import { ModeToggle } from "./mode-toggle";
+import NotificationDropdown from "./NotificationsDropdown"; 
 import {
   getAuthStatus,
   getUserData,
@@ -13,6 +14,7 @@ import {
   isAuthenticated,
 } from "../lib/auth";
 import { Button } from "./ui/button";
+
 
 // Type definitions
 type TabId =
@@ -233,6 +235,14 @@ export default function Header() {
               )
             )}
 
+            {/* Mobile Notifications */}
+            {mobileNavOpen && (
+              <div className="flex flex-col gap-3 mt-4">
+                <NotificationDropdown />
+              </div>
+            )}
+
+
             {/* Mobile Auth Section */}
             {mobileNavOpen && (
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 lg:hidden">
@@ -291,6 +301,7 @@ export default function Header() {
 
           {/* Desktop Profile & Settings Group */}
           <div className="hidden lg:flex items-center gap-2">
+            <NotificationDropdown />
             {/* Auth/Profile Section */}
             {isLoggedIn ? (
               <div className="relative" ref={profileMenuRef}>
