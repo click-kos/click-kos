@@ -39,9 +39,9 @@ export async function DELETE(request: NextRequest) {
     if(!id){
         return NextResponse.json({ message: "ID is required" }, { status: 400 });
     }
-    const {error} = await supabase.from("notification").delete().eq("id", id);
+    const {error} = await supabase.from("notification").delete().eq("notification_id", id);
     if(error){
-        return NextResponse.json({ message: "Error deleting notification", error: true }, { status: 500 });
+        return NextResponse.json({ message: "Error deleting notification", error }, { status: 500 });
     }
     return NextResponse.json({ message: "Notification deleted successfully" }, { status: 200 });
 }

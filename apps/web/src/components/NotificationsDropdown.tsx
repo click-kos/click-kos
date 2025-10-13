@@ -19,10 +19,12 @@ export default function NotificationDropdown() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/notifications`);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/notifications`
+      );
       if (!res.ok) throw new Error("Failed to fetch notifications");
       const data = await res.json();
-      setNotifications(data.data); 
+      setNotifications(data.data);
     } catch (err) {
       console.error("Error fetching notifications:", err);
     } finally {
@@ -32,21 +34,21 @@ export default function NotificationDropdown() {
 
   // Delete notification
   const deleteNotification = async (id: string) => {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/notifications?id=${id}`, {
-      method: 'DELETE',
-      
-    });
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/notifications?id=${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
-    if (!res.ok) throw new Error("Failed to delete notification");
+      if (!res.ok) throw new Error("Failed to delete notification");
 
-    setNotifications((prev) =>
-      prev.filter((n) => n.notification_id !== id)
-    );
-  } catch (err) {
-    console.error("Error deleting notification:", err);
-  }
-};
+      setNotifications((prev) => prev.filter((n) => n.notification_id !== id));
+    } catch (err) {
+      console.error("Error deleting notification:", err);
+    }
+  };
 
   return (
     <div className="relative">
@@ -54,7 +56,7 @@ export default function NotificationDropdown() {
       <button
         onClick={() => {
           setOpen((prev) => !prev);
-          if (!open) fetchNotifications(); 
+          if (!open) fetchNotifications();
         }}
         className="relative p-2 rounded hover:bg-gray-100"
       >
@@ -68,7 +70,7 @@ export default function NotificationDropdown() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border rounded-lg shadow-lg z-50">
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border rounded-lg shadow-lg z-50">
           <div className="p-2 font-semibold border-b">Notifications</div>
 
           <div className="max-h-64 overflow-y-auto">
@@ -80,7 +82,7 @@ export default function NotificationDropdown() {
               notifications.map((n) => (
                 <div
                   key={n.notification_id}
-                  className="flex justify-between items-center p-3 border-b last:border-none hover:bg-gray-50"
+                  className="flex justify-between items-center p-3 border-b last:border-none hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <div>
                     <p className="font-medium">{n.type}</p>
