@@ -149,10 +149,7 @@ export default function LoginPage() {
               />{" "}
               Remember me
             </label>
-            <Link
-              href="/auth/forgot-password"
-              className="text-[#483AA0] dark:text-[#7965C1]"
-            >
+            <Link href="/auth/forgot-password" className="">
               Forgot password?
             </Link>
           </div>
