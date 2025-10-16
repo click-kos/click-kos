@@ -2,36 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import Stripe from "stripe";
 
-
-
 export async function POST(req: NextRequest) {
-  
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil" as any,
-});
+    apiVersion: "2025-08-27.basil" as any,
+  });
+
   try {
-    const { order_id, amount, email } = await req.json();
+    const { amount, email, cart_items } = await req.json(); // No order_id yet
     const supabase = await createClient();
 
-    // Ensure we have a valid absolute URL with scheme for Stripe redirects
-    // Prefer APP_URL, but fall back to request origin if unset/invalid
-    const fallbackOrigin = req.nextUrl.origin; // e.g., http://localhost:3000
+    // Determine app URL
+    const fallbackOrigin = req.nextUrl.origin;
     const configuredWebUrl =
       process.env.WEB_APP_URL ||
       process.env.NEXT_PUBLIC_WEB_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
       process.env.APP_URL;
-    let appUrl = fallbackOrigin;
-    if (configuredWebUrl && /^(http|https):\/\//i.test(configuredWebUrl)) {
-      appUrl = configuredWebUrl;
-    }
+    const appUrl =
+      configuredWebUrl && /^(http|https):\/\//i.test(configuredWebUrl)
+        ? configuredWebUrl
+        : fallbackOrigin;
 
-    // Insert payment row
+    // Insert payment row first
     const { data: payment, error } = await supabase
       .from("payment")
       .insert([
         {
-          order_id,
           amount,
           method: "stripe",
           status: "pending",
@@ -42,22 +37,15 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    // Build itemized line items from order items
-    const { data: items, error: itemsError } = await supabase
-      .from("order_item")
-      .select("quantity, subtotal, menu_item:menu_item_id(name, price, item_image(url))")
-      .eq("order_id", order_id);
-
-    if (itemsError) throw itemsError;
-
-    const line_items = (items || []).map((it: any) => ({
+    // Convert cart items to Stripe line items
+    const line_items = (cart_items || []).map((it: any) => ({
       price_data: {
         currency: "zar",
         product_data: {
-          name: it.menu_item?.name ?? "Item",
-          images: it.menu_item?.item_image?.[0]?.url ? [it.menu_item.item_image[0].url] : undefined,
+          name: it.name,
+          images: it.image ? [it.image] : undefined,
         },
-        unit_amount: Math.round((it.menu_item?.price ?? (it.subtotal / Math.max(1, it.quantity))) * 100),
+        unit_amount: Math.round(it.price * 100),
       },
       quantity: it.quantity,
     }));
@@ -66,21 +54,11 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       customer_email: email,
-      line_items: line_items.length > 0 ? line_items : [
-        {
-          price_data: {
-            currency: "zar",
-            product_data: { name: `Order ${order_id}` },
-            unit_amount: Math.round(amount * 100),
-          },
-          quantity: 1,
-        },
-      ],
+      line_items,
       mode: "payment",
-      //Include payment_id in success URL for frontend lookup
       success_url: `${appUrl}/payments/success?payment_id=${payment.payment_id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/payments/cancel`,
-      metadata: { payment_id: payment.payment_id, order_id },
+      metadata: { payment_id: payment.payment_id },
     });
 
     return NextResponse.json({ payment, redirectUrl: session.url });
