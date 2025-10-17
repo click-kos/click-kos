@@ -94,16 +94,9 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// PATCH: Update profile image URL
+// PATCH: Upload profile image and update URL
 export async function PATCH(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { profile_image_url } = body;
-
-    if (!profile_image_url || typeof profile_image_url !== "string") {
-      return NextResponse.json({ error: "Missing or invalid profile_image_url" }, { status: 400 });
-    }
-
     const token = req.headers.get("Authorization")?.replace("Bearer ", "");
     if (!token) {
       return NextResponse.json({ error: "Missing access token" }, { status: 401 });
@@ -119,17 +112,43 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
     }
 
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
+
+    if (!file || file.size === 0) {
+      return NextResponse.json({ error: "No image file provided" }, { status: 400 });
+    }
+
+    const fileExt = file.name.split(".").pop();
+    const filePath = `avatars/${user.id}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file, {
+        upsert: true,
+        contentType: file.type,
+      });
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
     const { error: updateError } = await supabase
       .from("user")
-      .update({ profile_image_url })
+      .update({ profile_image_url: publicUrl })
       .eq("user_id", user.id);
 
     if (updateError) {
-      console.error("Image update error:", updateError);
-      return NextResponse.json({ error: "Failed to update profile image" }, { status: 500 });
+      console.error("DB update error:", updateError);
+      return NextResponse.json({ error: "Failed to update profile image URL" }, { status: 500 });
     }
 
-    return NextResponse.json({ message: "Profile image updated successfully" }, { status: 200 });
+    return NextResponse.json({ message: "Profile image updated", url: publicUrl }, { status: 200 });
   } catch (error) {
     console.error("PATCH error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
