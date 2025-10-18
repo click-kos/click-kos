@@ -16,6 +16,7 @@ import { useCart } from "@/context/CartContext";
 import { processCheckout } from "@/lib/checkout";
 import { toCartItem } from "@/lib/cart";
 
+
 const featuredItemsData = [
   {
     id: 1,
@@ -257,6 +258,7 @@ const featuredItemsData = [
 
 ];
 
+
 const categories = [
   { id: "all", name: "All Items", icon: ChefHat },
   { id: "traditional", name: "Traditional", icon: ChefHat },
@@ -275,7 +277,35 @@ export default function MenuPage() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [showItemModal, setShowItemModal] = useState(false);
 
-  const { addToCart, cartCount, cartItems, removeFromCart, clearCart } = useCart();
+
+  // Auto-open cart popup if ?checkout=1 is present
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("checkout") === "1") {
+        setShowCartPopup(true);
+        url.searchParams.delete("checkout");
+        window.history.replaceState(
+          {},
+          "",
+          url.pathname + url.search + url.hash
+        );
+      }
+    } catch {}
+  }, []);
+
+  // Fetch menu items
+  useEffect(() => {
+    const loadMenu = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const params = new URLSearchParams();
+        if (selectedCategory !== "all")
+          params.append("category", selectedCategory);
+        if (searchTerm.trim() !== "")
+          params.append("keyword", searchTerm.trim());
+
 
   // Filter items by category and search term
   useEffect(() => {
@@ -303,6 +333,7 @@ export default function MenuPage() {
   };
 
   const handleCheckout = async () => {
+    setShowCartPopup(false);
     await processCheckout({
       cartItems,
       clearCart,

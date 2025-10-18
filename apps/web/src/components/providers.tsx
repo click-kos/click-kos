@@ -2,14 +2,10 @@
 
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "./ui/sonner";
-import { CartProvider } from '../context/CartContext';
+import { CartProvider } from "../context/CartContext";
+import { AppProgressProvider as ProgressProvider } from "@bprogress/next";
 
-
-export default function Providers({
-  children
-}: {
-  children: React.ReactNode
-}) {
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
@@ -17,11 +13,12 @@ export default function Providers({
       enableSystem
       disableTransitionOnChange
     >
-      <CartProvider> 
-        {children}
-        <Toaster richColors />
-      </CartProvider>
-      
+      <ProgressProvider>
+        <CartProvider>
+          {children}
+          <Toaster richColors />
+        </CartProvider>
+      </ProgressProvider>
     </ThemeProvider>
   );
 }

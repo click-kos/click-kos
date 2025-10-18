@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any 
 ) {
   const supabase = await createClient();
   const id = params.id;
@@ -29,6 +29,7 @@ export async function POST(
     .from("files")
     .upload(`item_images/${fileName}`, buffer, {
       contentType: file.type || "application/octet-stream",
+      upsert: true, // overwrite if same path
     });
 
   if (uploadError) {
@@ -40,15 +41,39 @@ export async function POST(
     data: { publicUrl },
   } = supabase.storage.from("files").getPublicUrl(`item_images/${fileName}`);
 
-  // Insert into item_image
-  const { data: imageData, error: imageError } = await supabase
+  // Check if item already has an image
+  const { data: existing } = await supabase
     .from("item_image")
-    .insert([{ item_id: id, url: publicUrl }])
-    .select()
-    .single();
+    .select("img_id")
+    .eq("item_id", id)
+    .maybeSingle();
 
-  if (imageError) {
-    return NextResponse.json({ error: imageError.message }, { status: 500 });
+  let imageData;
+  if (existing) {
+    // Update existing image
+    const { data, error } = await supabase
+      .from("item_image")
+      .update({ url: publicUrl })
+      .eq("item_id", id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    imageData = data;
+  } else {
+    // Insert new image
+    const { data, error } = await supabase
+      .from("item_image")
+      .insert([{ item_id: id, url: publicUrl }])
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    imageData = data;
   }
 
   return NextResponse.json(
@@ -56,3 +81,4 @@ export async function POST(
     { status: 201 }
   );
 }
+

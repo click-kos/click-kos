@@ -1,22 +1,37 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 
 // Validation function
-function validateMenuItem(data: any) {
-    const errors: Record<string, string> = {};
+function validateMenuItem(data: any, options: { partial?: boolean } = {}) {
+  const { partial = false } = options;
+  const errors: Record<string, string> = {};
 
-    if (!data.name || typeof data.name !== "string")
-        errors.name = "Name is required and must be a string.";
-    if (data.price === undefined || typeof data.price !== "number" || data.price < 0)
-        errors.price = "Price is required and must be a non-negative number.";
-    if (!data.description || typeof data.description !== "string")
-        errors.description = "Description is required and must be a string.";
-    if (data.available !== undefined && typeof data.available !== "boolean")
-        errors.available = "Available must be a boolean.";
-    if (!data.category || typeof data.category !== "string")
-        errors.category = "Category is required and must be a string.";
+  if (!partial || "name" in data) {
+    if (!data.name || typeof data.name !== "string") {
+      errors.name = "Name is required and must be a string.";
+    }
+  }
 
-    return Object.keys(errors).length > 0 ? errors : null;
+  if (!partial || "price" in data) {
+    if (data.price === undefined || typeof data.price !== "number" || data.price < 0) {
+      errors.price = "Price is required and must be a non-negative number.";
+    }
+  }
+
+  if (!partial || "description" in data) {
+    if (!data.description || typeof data.description !== "string") {
+      errors.description = "Description is required and must be a string.";
+    }
+  }
+
+  if (!partial || "category" in data) {
+    if (!data.category || typeof data.category !== "string") {
+      errors.category = "Category is required and must be a string.";
+    }
+  }
+
+  return Object.keys(errors).length > 0 ? errors : null;
 }
 
 // GET /api/menu/:id
@@ -40,89 +55,133 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     return NextResponse.json({ message: "Menu item fetched successfully", data }, { status: 200 });
 }
 
-// PUT /api/menu/:id
-// PUT /api/menu/:id
 export async function PUT(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
   const supabase = await createClient();
-  const body = await req.json();
 
-  // Pull imageUrl out separately; rest goes to menu_item
-  const { imageUrl, ...updateFields } = body;
+  const contentType = req.headers.get("content-type") || "";
+  let body: any = {};
+  let file: File | null = null;
 
-  // Validate the item fields (not imageUrl)
-  const validationErrors = validateMenuItem(updateFields);
-  if (validationErrors) {
-    return NextResponse.json({ error: validationErrors }, { status: 400 });
+  // 1️⃣ Handle multipart/form-data or JSON
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await req.formData();
+    file = formData.get("file") as File | null;
+    body = Object.fromEntries(formData.entries());
+  } else {
+    body = await req.json();
   }
 
-  // Update the menu_item record
-  const { data: itemData, error: itemError } = await supabase
-    .from("menu_item")
-    .update(updateFields)
-    .eq("item_id", id)
-    .select()
-    .single();
+  // Separate image-related fields
+  const { file: _file, imageUrl, ...updateFields } = body;
 
-  if (itemError) {
-    return NextResponse.json({ error: itemError.message }, { status: 500 });
+  // 2️⃣ Validate menu item fields if provided
+  if (Object.keys(updateFields).length > 0) {
+    const errors = validateMenuItem(updateFields, { partial: true });
+    if (errors) return NextResponse.json({ error: errors }, { status: 400 });
   }
 
-  //  If imageUrl is provided, insert or update the related item_image record
- // 2Handle image update if provided
-let imageRecord = null;
-if (imageUrl) {
-  // Check if an image already exists for this menu item
-  const { data: existing, error: fetchError } = await supabase
-    .from("item_image")
-    .select("img_id")       // use your actual primary key
-    .eq("item_id", id)
-    .maybeSingle();
-
-  if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 });
-  }
-
-  if (existing) {
-    // Update the existing image URL
-    const { data: updatedImage, error: updateError } = await supabase
-      .from("item_image")
-      .update({ url: imageUrl })
+  // 3️⃣ Update menu item fields if any
+  let menuItemData = null;
+  if (Object.keys(updateFields).length > 0) {
+    const { data, error } = await supabase
+      .from("menu_item")
+      .update(updateFields)
       .eq("item_id", id)
       .select()
       .single();
-
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
-    }
-    imageRecord = updatedImage;
-  } else {
-    // Insert a new record if none exists
-    const { data: newImage, error: insertError } = await supabase
-      .from("item_image")
-      .insert([{ item_id: id, url: imageUrl }])
-      .select()
-      .single();
-
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
-    imageRecord = newImage;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    menuItemData = data;
   }
-}
 
+  // 4️⃣ Handle image update (file upload or imageUrl)
+  let imageRecord = null;
+
+  if (file || imageUrl) {
+    let finalUrl = imageUrl || "";
+
+    // Handle file upload if file exists
+    if (file) {
+      const filename = `${randomUUID()}-${file.name}`;
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const { error: uploadError } = await supabase.storage
+        .from("menu_images")
+        .upload(filename, buffer, {
+          contentType: file.type || "application/octet-stream",
+          upsert: true,
+        });
+
+      if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 500 });
+
+      finalUrl = supabase.storage.from("menu_images").getPublicUrl(filename).data.publicUrl;
+    }
+
+    // Check if image already exists
+    const { data: existing, error: fetchError } = await supabase
+      .from("item_image")
+      .select("*")
+      .eq("item_id", id)
+      .maybeSingle();
+
+    if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from("item_image")
+        .update({ url: finalUrl })
+        .eq("item_id", id)
+        .select()
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      imageRecord = data;
+    } else {
+      const { data, error } = await supabase
+        .from("item_image")
+        .insert([{ item_id: id, url: finalUrl }])
+        .select()
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      imageRecord = data;
+    }
+  }
+
+  // 5️⃣ Fetch existing menu item if it wasn't updated
+  if (!menuItemData) {
+    const { data, error } = await supabase
+      .from("menu_item")
+      .select("*")
+      .eq("item_id", id)
+      .single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    menuItemData = data;
+  }
+
+  // 6️⃣ Fetch existing image if it wasn't updated
+  if (!imageRecord) {
+    const { data, error } = await supabase
+      .from("item_image")
+      .select("*")
+      .eq("item_id", id)
+      .maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    imageRecord = data || null;
+  }
 
   return NextResponse.json(
     {
       message: "Menu item updated successfully",
-      data: { ...itemData, image: imageRecord },
+      data: { ...menuItemData, image: imageRecord },
     },
     { status: 200 }
   );
 }
+
+
 
 // DELETE /api/menu/:id
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {

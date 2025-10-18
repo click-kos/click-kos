@@ -6,11 +6,11 @@
 @theme {
   --font-sans: "Inter", "Geist", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  
+
   /* Click & Kos Custom Colors */
-  --color-primary-navy: #0E2148;
-  --color-primary-purple: #483AA0;
-  --color-primary-light-purple: #7965C1;
+  --color-primary-navy: #0e2148;
+  --color-primary-purple: #483aa0;
+  --color-primary-light-purple: #7965c1;
 }
 
 html,
@@ -30,34 +30,34 @@ body {
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  
+
   /* Updated primary colors to match Click & Kos scheme */
-  --primary: #0E2148;
+  --primary: #0e2148;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: #7965C1;
+  --secondary: #7965c1;
   --secondary-foreground: oklch(0.985 0 0);
-  --accent: #483AA0;
+  --accent: #483aa0;
   --accent-foreground: oklch(0.985 0 0);
-  
+
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: #483AA0;
-  --chart-1: #0E2148;
-  --chart-2: #483AA0;
-  --chart-3: #7965C1;
+  --ring: #483aa0;
+  --chart-1: #0e2148;
+  --chart-2: #483aa0;
+  --chart-3: #7965c1;
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #0E2148;
+  --sidebar-primary: #0e2148;
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: #7965C1;
+  --sidebar-accent: #7965c1;
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: #483AA0;
+  --sidebar-ring: #483aa0;
 }
 
 .dark {
@@ -67,31 +67,31 @@ body {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #7965C1;
+  --primary: #7965c1;
   --primary-foreground: oklch(0.145 0 0);
-  --secondary: #483AA0;
+  --secondary: #483aa0;
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: #0E2148;
+  --accent: #0e2148;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: #7965C1;
-  --chart-1: #7965C1;
-  --chart-2: #483AA0;
-  --chart-3: #0E2148;
+  --ring: #7965c1;
+  --chart-1: #7965c1;
+  --chart-2: #483aa0;
+  --chart-3: #0e2148;
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: #7965C1;
+  --sidebar-primary: #7965c1;
   --sidebar-primary-foreground: oklch(0.145 0 0);
-  --sidebar-accent: #483AA0;
+  --sidebar-accent: #483aa0;
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: #7965C1;
+  --sidebar-ring: #7965c1;
 }
 
 @theme inline {
@@ -144,46 +144,46 @@ body {
 /* Custom Click & Kos utility classes */
 @layer utilities {
   .text-primary-navy {
-    color: #0E2148;
+    color: #0e2148;
   }
-  
+
   .text-primary-purple {
-    color: #483AA0;
+    color: #483aa0;
   }
-  
+
   .text-primary-light-purple {
-    color: #7965C1;
+    color: #7965c1;
   }
-  
+
   .bg-primary-navy {
-    background-color: #0E2148;
+    background-color: #0e2148;
   }
-  
+
   .bg-primary-purple {
-    background-color: #483AA0;
+    background-color: #483aa0;
   }
-  
+
   .bg-primary-light-purple {
-    background-color: #7965C1;
+    background-color: #7965c1;
   }
-  
+
   .border-primary-navy {
-    border-color: #0E2148;
+    border-color: #0e2148;
   }
-  
+
   .border-primary-purple {
-    border-color: #483AA0;
+    border-color: #483aa0;
   }
-  
+
   .border-primary-light-purple {
-    border-color: #7965C1;
+    border-color: #7965c1;
   }
-  
+
   .gradient-primary {
-    background: linear-gradient(135deg, #0E2148 0%, #483AA0 50%, #7965C1 100%);
+    background: linear-gradient(135deg, #0e2148 0%, #483aa0 50%, #7965c1 100%);
   }
-  
+
   .gradient-primary-reverse {
-    background: linear-gradient(135deg, #7965C1 0%, #483AA0 50%, #0E2148 100%);
+    background: linear-gradient(135deg, #7965c1 0%, #483aa0 50%, #0e2148 100%);
   }
 }

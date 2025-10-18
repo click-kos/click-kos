@@ -15,6 +15,9 @@ export const processCheckout = async ({
   clearCart,
   onSuccess,
 }: CheckoutOptions): Promise<boolean> => {
+  toast("Loading, Please wait...", {
+    description: "Processing your order..."
+  })
   if (!cartItems.length) {
     toast.error('Your cart is empty.');
     return false;
@@ -70,11 +73,15 @@ export const processCheckout = async ({
 
     if (!orderResponse.ok) {
       const errorText = await orderResponse.text();
-      console.error('Order creation failed:', errorText);
+      toast('Order creation failed: '+errorText);
       throw new Error(`Failed to create order (${orderResponse.status})`);
     }
 
     const { order } = await orderResponse.json();
+
+    toast("Order processed successfully.",{
+      description: "Redirecting you to payment page."
+    })
 
     const paymentResponse = await fetch(`${serverUrl}/payments`, {
       method: 'POST',
@@ -100,7 +107,10 @@ export const processCheckout = async ({
       throw new Error('No redirect URL received from payment service');
     }
 
-    clearCart();
+    toast("Order processed successfully.",{
+      description: `Redirecting you to payment page(${redirectUrl}).`
+    })
+
     onSuccess?.();
     window.location.href = redirectUrl;
 

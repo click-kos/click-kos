@@ -1,44 +1,54 @@
-# Order API Documentation
+**Orders API Documentation**
 
 A secure, scalable order management API built with Next.js and Supabase. Supports authenticated order placement, item tracking, status updates, and real-time notifications for users and staff.
 
- ## Features
+# Features
 
-• 	Authenticated order creation
-• 	Itemized order tracking
-• 	Subtotal and total calculations
-• 	Notification system
-• 	Role-based access (user vs staff)
-• 	Realtime frontend support via Supabase channels
+Authenticated order creation
 
-## Endpoints
+Itemized order tracking
 
-**POST** /order
+Subtotal and total calculations
+
+Notification system
+
+Role-based access (user vs staff)
+
+Realtime frontend support via Supabase channels
+
+Endpoints
+POST /order
 
 Create a new order with items.
 
-**Request**
+Request
+
 {
   "items": [
     { "product_id": "uuid", "quantity": 2, "price": 100 }
   ]
 }
 
-**Response**
+
+Response
+
 {
   "order": { ... },
   "orderItems": [ ... ]
 }
+
+
 Inserts into order, order_item, and notifications.
 
-**GET** /order
+GET /order
 
-**Retrieve orders based on role**
+Retrieve orders based on role:
 
-    Staff: Sees all pending orders.
-    User: Sees only their own orders.
+Staff: sees all pending orders
 
-**Response**
+User: sees only their own orders
+
+Response
 
 {
   "orders": [
@@ -48,12 +58,14 @@ Inserts into order, order_item, and notifications.
       "order_item": [ ... ]
     }
   ]
-
 }
 
-**GET** /orders/:id
+GET /order/:id
+
 Get detailed order info including items.
+
 Response
+
 {
   "order": {
     "id": "uuid",
@@ -61,52 +73,50 @@ Response
   }
 }
 
-**PUT** /orders/:id?status=pending|confirmed|shipped|cancelled
+PUT /order/:id?status=pending|confirmed|shipped
 
-Update order status and notify user.
+Optional: Update order status and notify user.
+
 Response
+
 {
   "order": { ... }
-}
 
-**DELETE** /orders/:id
 
-Cancel a pending order.
-Response
-{ "success": true }
-Only orders with  can be cancelled.
+Note: Order cancellation via DELETE is no longer supported.
 
-## Notifications
+**Notifications**
 
-Notifications are inserted into the notifications table for:
-    Order placement
-    Status updates
-    Cancellations
+Inserted into the notifications table for:
 
-**Each notification includes:**
+Order placement
+
+Status updates
+
+Notification object
+
 {
-  user_id: string,
-  message: string,
-  is_read: boolean
+  "user_id": "string",
+  "message": "string",
+  "is_read": false
 }
-
 
 **Tech Stack**
-    Framework: Next.js (App Router)
-    Backend: Supabase (Postgres + Auth + Realtime)
-    Auth: Supabase Session-based
-    Notifications: Table-driven, Realtime-compatible
 
-{
-  user_id: string,
-  message: string,
-  is_read: boolean
-}
+Framework: Next.js (App Router)
+
+Backend: Supabase (Postgres + Auth + Realtime)
+
+Auth: Supabase Session-based
+
+Notifications: Table-driven, Realtime-compatible
 
 **Best Practices**
-    Validate item data before sending to POST /orders.
-    Use Realtime subscriptions to avoid polling.
 
-    Filter subscriptions by user_id to prevent data leaks.
+Validate item data before sending to POST /order
 
-    Index order.created_at and notifications.user_id for performance.
+Use Realtime subscriptions to avoid polling
+
+Filter subscriptions by user_id to prevent data leaks
+
+Index order.created_at and notifications.user_id for performance

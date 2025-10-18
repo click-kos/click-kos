@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil" as any,
-});
 
 // Confirms a payment by verifying the Stripe Checkout Session and updating DB
 export async function POST(req: NextRequest) {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2025-08-27.basil" as any,
+});
+
     const { session_id, payment_id } = await req.json();
 
     if (!session_id && !payment_id) {
@@ -40,7 +41,11 @@ export async function POST(req: NextRequest) {
     if (status === "paid" || status === "no_payment_required") {
       await supabase.from("payment").update({ status: "success" }).eq("payment_id", metaPaymentId);
       if (metaOrderId) {
-        await supabase.from("order").update({ status: "paid" }).eq("id", metaOrderId).eq("status", "pending");
+        await supabase
+          .from("order")
+          .update({ status: "paid" })
+          .or(`id.eq.${metaOrderId},order_id.eq.${metaOrderId}`)
+          .eq("status", "pending");
       }
       return NextResponse.json({ status: "success" });
     }
@@ -48,7 +53,10 @@ export async function POST(req: NextRequest) {
     if (status === "unpaid") {
       await supabase.from("payment").update({ status: "failed" }).eq("payment_id", metaPaymentId);
       if (metaOrderId) {
-        await supabase.from("order").update({ status: "unpaid" }).eq("id", metaOrderId);
+        await supabase
+          .from("order")
+          .update({ status: "unpaid" })
+          .or(`id.eq.${metaOrderId},order_id.eq.${metaOrderId}`);
       }
       return NextResponse.json({ status: "failed" });
     }
