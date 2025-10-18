@@ -228,6 +228,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
           <option value="Grill">Grill</option>
           <option value="Sandwhich">Sandwhich</option>
           <option value="Beverages">Beverages</option>
+          <option value="Beverages">Other</option>
         </select>
       </div>
       <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
