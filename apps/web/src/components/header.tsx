@@ -228,7 +228,7 @@ export default function Header() {
               </div>
             )}
             {tabs.map((tab) =>
-              tab.target.includes(userData?.role.toLowerCase()) ? (
+              tab.target.includes(userData?.role.toLowerCase() || "") ? (
                 <Link
                   key={tab.id}
                   href={tab.href}
