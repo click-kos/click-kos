@@ -97,10 +97,10 @@ export async function POST(req: NextRequest) {
     if (itemsError) throw itemsError;
 
     // Notification
-    await supabase.from("notifications").insert({
+    await supabase.from("notification").insert({
       user_id: user.id,
-      message: `Order #${order.id} placed successfully.`,
-      is_read: false,
+      message: `Order #${order.order_id.slice(0, 6)} placed, awaiting payment.`,
+      type: "Order confirmation",
     });
 
     // Normalize response to always include id
