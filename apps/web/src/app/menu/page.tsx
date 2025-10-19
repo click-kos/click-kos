@@ -1,4 +1,4 @@
-/*"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -16,7 +16,7 @@ import { useCart } from "@/context/CartContext";
 import { processCheckout } from "@/lib/checkout";
 import { toCartItem } from "@/lib/cart";
 
-/*
+
 const featuredItemsData = [
   {
     id: 1,
@@ -355,7 +355,7 @@ export default function MenuPage() {
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
-      {/* Header *//*}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#0E2148] dark:text-white">
           Menu
@@ -387,9 +387,9 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* Main Grid *//*}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar Filters *//*}
+        {/* Sidebar Filters */}
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sticky top-4">
             <h2 className="font-semibold mb-4 text-[#0E2148] dark:text-white">
@@ -417,7 +417,7 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {/* Menu Items *//*}
+        {/* Menu Items */}
         <div className="lg:col-span-3">
           {featuredItems.length === 0 ? (
             <div className="text-center py-16 text-gray-500 dark:text-gray-400">
@@ -431,7 +431,7 @@ export default function MenuPage() {
                   className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => handleItemClick(item)}
                 >
-                  {/* Image *//*}
+                  {/* Image */}
                   <div className="relative h-40 overflow-hidden">
                     <img
                       src={item.image}
@@ -457,7 +457,7 @@ export default function MenuPage() {
                     </button>
                   </div>
 
-                  {/* Info *//*}
+                  {/* Info */}
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="font-semibold text-[#0E2148] dark:text-white text-lg">
@@ -488,7 +488,7 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* Item Detail Modal *//*}
+      {/* Item Detail Modal */}
       {showItemModal && selectedItem && (
         <>
           <div
@@ -497,7 +497,7 @@ export default function MenuPage() {
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-              {/* Header *//*}
+              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-bold text-[#0E2148] dark:text-white">
                   {selectedItem.name}
@@ -510,10 +510,10 @@ export default function MenuPage() {
                 </button>
               </div>
 
-              {/* Content *//*}
+              {/* Content */}
               <div className="p-6 max-h-[70vh] overflow-y-auto">
                 <div className="flex flex-col md:flex-row gap-6">
-                  {/* Image *//*}
+                  {/* Image */}
                   <div className="md:w-1/2">
                     <img
                       src={selectedItem.image}
@@ -522,7 +522,7 @@ export default function MenuPage() {
                     />
                   </div>
 
-                  {/* Details *//*}
+                  {/* Details */}
                   <div className="md:w-1/2">
                     <div className="mb-4">
                       <h3 className="text-2xl font-bold text-[#0E2148] dark:text-white mb-2">
@@ -595,7 +595,7 @@ export default function MenuPage() {
         </>
       )}
 
-      {/* Cart Popup *//*}
+      {/* Cart Popup */}
       {showCartPopup && (
         <>
           <div
@@ -604,7 +604,7 @@ export default function MenuPage() {
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-hidden">
-              {/* Header *//*}
+              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-[#0E2148] dark:text-white">
                   Your Cart
@@ -617,7 +617,7 @@ export default function MenuPage() {
                 </button>
               </div>
 
-              {/* Cart Content *//*}
+              {/* Cart Content */}
               <div className="p-4 max-h-96 overflow-y-auto">
                 {cartItems.length === 0 ? (
                   <p className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -655,7 +655,7 @@ export default function MenuPage() {
                 )}
               </div>
 
-              {/* Footer *//*}
+              {/* Footer */}
               {cartItems.length > 0 && (
                 <div className="border-t border-gray-200 dark:border-gray-700 p-4">
                   <div className="flex justify-between items-center mb-3">
@@ -683,4 +683,4 @@ export default function MenuPage() {
       )}
     </div>
   );
-}*/
+}
