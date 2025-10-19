@@ -2,31 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import Stripe from "stripe";
 
+
+//new approach, add order to db, hold the order id in the payment table, then if that payment is unsuccessful, delete the order from the db
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: "2025-08-27.basil" as any,
   });
 
   try {
-    const { amount, email, cart_items, user_id } = await req.json(); 
+    const { amount, email, order_id } = await req.json(); 
     const supabase = await createClient();
 
     // Determine app URL
-    const fallbackOrigin = req.nextUrl.origin;
+    const fallbackOrigin = req.nextUrl.origin; // e.g., http://localhost:3000
     const configuredWebUrl =
       process.env.WEB_APP_URL ||
       process.env.NEXT_PUBLIC_WEB_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
       process.env.APP_URL;
-    const appUrl =
-      configuredWebUrl && /^(http|https):\/\//i.test(configuredWebUrl)
-        ? configuredWebUrl
-        : fallbackOrigin;
+    let appUrl = fallbackOrigin;
+    if (configuredWebUrl && /^(http|https):\/\//i.test(configuredWebUrl)) {
+      appUrl = configuredWebUrl;
+    }
 
     // Insert payment row first
     const { data: payment, error } = await supabase
       .from("payment")
       .insert([
         {
+          order_id,
           amount,
           method: "stripe",
           status: "pending",
@@ -37,17 +41,24 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    // Convert cart items to Stripe line items
-    const line_items = (cart_items || []).map((item: any) => ({
+    // Build itemized line items from order items
+    const { data: items, error: itemsError } = await supabase
+      .from("order_item")
+      .select("quantity, subtotal, menu_item:menu_item_id(name, price, item_image(url))")
+      .eq("order_id", order_id);
+
+    if (itemsError) throw itemsError;
+
+    const line_items = (items || []).map((it: any) => ({
       price_data: {
         currency: "zar",
         product_data: {
-          name: item.name,
-          images: item.image ? [item.image] : undefined,
+          name: it.menu_item?.name ?? "Item",
+          images: it.menu_item?.item_image?.[0]?.url ? [it.menu_item.item_image[0].url] : undefined,
         },
-        unit_amount: Math.round(item.price * 100),
+        unit_amount: Math.round((it.menu_item?.price ?? (it.subtotal / Math.max(1, it.quantity))) * 100),
       },
-      quantity: item.quantity,
+      quantity: it.quantity,
     }));
 
     // Create Stripe Checkout Session
@@ -57,13 +68,12 @@ export async function POST(req: NextRequest) {
       line_items,
       mode: "payment",
       success_url: `${appUrl}/payments/success?payment_id=${payment.payment_id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/payments/cancel`,
-      metadata: { payment_id: payment.payment_id, user_id, cart_items: JSON.stringify(cart_items),
-       },
+      cancel_url: `${appUrl}/payments/cancel?order_id=${order_id}`,
+      metadata: { payment_id: payment.payment_id},
     });
 
     return NextResponse.json({ payment, redirectUrl: session.url });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: err }, { status: 400 });
   }
 }
