@@ -123,7 +123,7 @@ export async function PATCH(req: NextRequest) {
     const filePath = `avatars/${user.id}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("avatars")
+      .from("files")
       .upload(filePath, file, {
         upsert: true,
         contentType: file.type,
@@ -136,7 +136,7 @@ export async function PATCH(req: NextRequest) {
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from("avatars").getPublicUrl(filePath);
+    } = supabase.storage.from("files").getPublicUrl(filePath);
 
     const { error: updateError } = await supabase
       .from("user")

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, getAuthorization } from "@/utils/supabase/server";
 
+const userOrderCache = new Map();//in memory cache
+const cacheExpiry = () => Date.now() + 5 * 60 * 1000;
+
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
 
@@ -28,6 +31,18 @@ export async function GET(req: NextRequest) {
     if (isStaff) {
       query = query.eq("status", "pending"); // staff sees only new orders
     } else {
+      //run the cache for the user
+      const cachedOrders = userOrderCache.get(user.id);
+      //if the cache exists and has not expired.
+      if (cachedOrders && cachedOrders.expiry > Date.now()) {
+          console.log("From cache");
+          return NextResponse.json({
+          currentOrders: userOrderCache.get(user.id).currentOrders,
+          pastOrders: userOrderCache.get(user.id).pastOrders,
+        });
+      }
+
+      //it will pass if the cache has expired
       query = query.eq("user_id", user.id); // user sees only their orders
     }
 
@@ -51,10 +66,14 @@ export async function GET(req: NextRequest) {
         date: o.ordered_at,
       });
 
-      return NextResponse.json({
-        currentOrders: currentOrders.map(mapOrder),
-        pastOrders: pastOrders.map(mapOrder),
-      });
+      if(dbUser.role === "student"){
+        //add to cache
+        userOrderCache.set(user.id, { currentOrders: currentOrders.map(mapOrder), pastOrders: pastOrders.map(mapOrder), expiry: cacheExpiry() });
+        return NextResponse.json({
+          currentOrders: userOrderCache.get(user.id).currentOrders,
+          pastOrders: userOrderCache.get(user.id).pastOrders,
+        });
+      }
     }
 
     return NextResponse.json({ orders }); // staff/admin view
