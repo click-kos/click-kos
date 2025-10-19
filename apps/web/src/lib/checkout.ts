@@ -40,48 +40,7 @@ export const processCheckout = async ({
   }
 
   try {
-    const itemCounts = cartItems.reduce<Record<string, number>>((acc, item) => {
-      const key = item.id;
-      acc[key] = (acc[key] ?? 0) + 1;
-      return acc;
-    }, {});
-
-    const orderItems = Object.entries(itemCounts).map(([id, quantity]) => {
-      const item = cartItems.find((cartItem) => cartItem.id === id);
-
-      if (!item) {
-        throw new Error(`Cart item with id ${id} not found`);
-      }
-
-      return {
-        product_id: item.id,
-        quantity,
-        price: item.price,
-      };
-    });
-
     const total = cartItems.reduce((sum, item) => sum + item.price, 0);
-
-    const orderResponse = await fetch(`${serverUrl}/order`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ items: orderItems }),
-    });
-
-    if (!orderResponse.ok) {
-      const errorText = await orderResponse.text();
-      toast('Order creation failed: '+errorText);
-      throw new Error(`Failed to create order (${orderResponse.status})`);
-    }
-
-    const { order } = await orderResponse.json();
-
-    toast("Order processed successfully.",{
-      description: "Redirecting you to payment page."
-    })
 
     const paymentResponse = await fetch(`${serverUrl}/payments`, {
       method: 'POST',
@@ -89,9 +48,10 @@ export const processCheckout = async ({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        order_id: (order as any).id ?? (order as any).order_id,
+        //order_id: (order as any).id ?? (order as any).order_id,
         amount: total,
         email: userData.email,
+        cartItems: cartItems
       }),
     });
 
@@ -107,11 +67,11 @@ export const processCheckout = async ({
       throw new Error('No redirect URL received from payment service');
     }
 
-    toast("Order processed successfully.",{
-      description: `Redirecting you to payment page(${redirectUrl}).`
+    toast("Redirecting you to payment page...",{
+      description: `Please wait(${redirectUrl}).`
     })
 
-    onSuccess?.();
+    //onSuccess?.();
     window.location.href = redirectUrl;
 
     return true;
