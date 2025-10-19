@@ -69,12 +69,11 @@ export async function POST(req: NextRequest) {
       mode: "payment",
       success_url: `${appUrl}/payments/success?payment_id=${payment.payment_id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/payments/cancel?order_id=${order_id}`,
-      metadata: { payment_id: payment.payment_id,
-       },
+      metadata: { payment_id: payment.payment_id},
     });
 
     return NextResponse.json({ payment, redirectUrl: session.url });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: err }, { status: 400 });
   }
 }
