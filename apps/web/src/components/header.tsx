@@ -16,6 +16,7 @@ import {
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 // Type definitions
 type TabId =
@@ -179,8 +180,15 @@ export default function Header() {
           </Button>
           <Link
             href="/"
-            className="text-lg font-bold text-[#0E2148] dark:text-white"
+            className="text-lg font-bold text-[#0E2148] dark:text-white flex gap-2 items-center"
           >
+            <Image
+              src="/logo.png"
+              alt="Click & Kos Logo"
+              width={40}
+              height={40}
+              className="rounded-xl"
+            />
             Click & Kos
           </Link>
         </div>
