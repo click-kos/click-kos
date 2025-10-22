@@ -407,7 +407,15 @@ const AddMenuItemModal: React.FC<AddMenuItemModalProps> = ({
   onClose,
   onAdd,
   isSubmitting,
-  availableCategories = ["Traditional", "Grill", "Sandwhich", "Beverages"],
+  availableCategories = [
+    "Panini",
+    "Decadent",
+    "Sandwich",
+    "Beverages",
+    "Burgers",
+    "Wraps",
+    "Add-on",
+  ],
 }) => {
   const handleSubmit = (data: Partial<MenuItem> & { imageUrl?: string }) => {
     onAdd(data);
