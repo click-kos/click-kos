@@ -19,10 +19,13 @@ import { toast } from "sonner";
 
 const categories = [
   { id: "all", name: "All Items", icon: ChefHat },
-  { id: "traditional", name: "Traditional", icon: ChefHat },
-  { id: "grill", name: "Grill", icon: TrendingUp },
-  { id: "sandwich", name: "Sandwiches", icon: Star },
-  { id: "beverages", name: "Beverages", icon: Clock },
+  { id: "panini", name: "Pita & Panini", icon: Star },
+  { id: "decadent", name: "Decadent treats", icon: TrendingUp },
+  { id: "sandwich", name: "Sandwiches", icon: ChefHat },
+  { id: "beverages", name: "Beverages", icon: Star },
+  { id: "burgers", name: "Burgers", icon: Star },
+  { id: "wraps", name: "Wraps", icon: Star },
+  { id: "add-on", name: "Add-on", icon: Star },
 ];
 
 export default function MenuPage() {

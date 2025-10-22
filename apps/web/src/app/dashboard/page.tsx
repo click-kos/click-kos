@@ -369,7 +369,15 @@ const UpdateMenuItemModal: React.FC<UpdateMenuItemModalProps> = ({
   onClose,
   onUpdate,
   isSubmitting,
-  availableCategories = ["Traditional", "Grill", "Sandwhich", "Beverages"],
+  availableCategories = [
+    "Panini",
+    "Decadent",
+    "Sandwich",
+    "Beverages",
+    "Burgers",
+    "Wraps",
+    "Add-on",
+  ],
 }) => {
   const handleSubmit = (data: Partial<MenuItem> & { imageUrl?: string }) => {
     onUpdate(data);
@@ -615,7 +623,7 @@ const MenuManagement: React.FC = () => {
         price: data.price,
         description: data.description,
         available: data.available,
-        category: data.category,
+        category: data.category?.toLowerCase(),
         imageUrl,
       };
 
@@ -652,7 +660,7 @@ const MenuManagement: React.FC = () => {
         price: data.price,
         description: data.description,
         available: data.available,
-        category: data.category,
+        category: data.category?.toLowerCase(),
       };
 
       const response = await fetch(
